@@ -8,9 +8,9 @@
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
 <meta name="apple-mobile-web-app-title" content="آرشیو تعمیرات">
-<link rel="manifest" href="data:application/manifest+json,%7B%22name%22%3A%22%D8%A2%D8%B1%D8%B4%DB%8C%D9%88%20%D8%AA%D8%B9%D9%85%DB%8C%D8%B1%D8%A7%D8%AA%22%2C%22short_name%22%3A%22%D8%A2%D8%B1%D8%B4%DB%8C%D9%88%22%2C%22start_url%22%3A%22.%22%2C%22display%22%3A%22standalone%22%2C%22orientation%22%3A%22portrait%22%2C%22theme_color%22%3A%22%230f5b4a%22%2C%22background_color%22%3A%22%23eef2f0%22%7D">
+<link rel="manifest" href="data:application/manifest+json,%7B%22name%22%3A%22%D8%A2%D8%B1%D8%B4%DB%8C%DB%8C%20%D8%AA%D8%B9%D9%85%DB%8C%D8%B1%D8%A7%D8%AA%22%2C%22short_name%22%3A%22%D8%A2%D8%B1%D8%B4%DB%8C%DB%8C%22%2C%22start_url%22%3A%22.%22%2C%22display%22%3A%22standalone%22%2C%22orientation%22%3A%22portrait%22%2C%22theme_color%22%3A%22%230f5b4a%22%2C%22background_color%22%3A%22%23eef2f0%22%2C%22icons%22%3A%5B%7B%22src%22%3A%22data%3Aimage%2Fsvg%2Bxml%3Butf8%2C%3Csvg%20xmlns%3D%27http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%27%20viewBox%3D%270%200%20512%20512%27%3E%3Crect%20width%3D%27512%27%20height%3D%27512%27%20rx%3D%27110%27%20fill%3D%27%230f5b4a%27%2F%3E%3Cpath%20d%3D%27M160%20160h192v192H160z%27%20fill%3D%27%23e9b824%27%2F%3E%3C%2Fsvg%3E%22%2C%22sizes%22%3A%22512x512%22%2C%22type%22%3A%22image%2Fsvg%2Bxml%22%7D%5D%7D">
 
-<title>آرشیو تعمیرات</title>
+<title>آرشیو تعمیرات و پروژه‌ها</title>
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Vazirmatn:wght@400;500;700;800&display=swap">
 <style>
 :root{
@@ -163,12 +163,7 @@ body{background-image:radial-gradient(circle,var(--line) 1px,transparent 1.3px);
 .meta{border-inline-start:6px solid var(--silk)}
 .empty svg{opacity:1;margin-bottom:14px;max-width:100%;height:auto}
 .empty b{color:var(--ink);font-size:18px}
-
-/* Mobile fullscreen / safe-area */
 body{padding-left:env(safe-area-inset-left,0px);padding-right:env(safe-area-inset-right,0px)}
-#fullscreenBtn{position:fixed;left:10px;top:calc(10px + env(safe-area-inset-top,0px));z-index:1000;width:42px;height:42px;border:1px solid var(--line);border-radius:12px;background:var(--surface);color:var(--ink);box-shadow:0 4px 16px rgba(0,0,0,.12);font-size:22px;display:grid;place-items:center;cursor:pointer}
-@media (min-width:700px){#fullscreenBtn{display:none}}
-@media (display-mode: fullscreen),(display-mode: standalone){body{min-height:100dvh}.app{min-height:100dvh}}
 </style>
 </head>
 <body>
@@ -181,6 +176,7 @@ body{padding-left:env(safe-area-inset-left,0px);padding-right:env(safe-area-inse
   <input id="q" class="search" type="search" placeholder="جستجو: عنوان، دستگاه، مشتری، تلفن…" aria-label="جستجو">
   <div class="chips" id="chips" role="group" aria-label="فیلتر وضعیت"></div>
 </header>
+
 <div class="toolbar" id="tools-wrap">
   <button type="button" class="btn" id="share-all">اشتراک‌گذاری لیست</button>
   <button type="button" class="btn" id="export-data">پشتیبان‌گیری</button>
@@ -233,7 +229,7 @@ body{padding-left:env(safe-area-inset-left,0px);padding-right:env(safe-area-inse
     </div>
     <div class="two">
       <div><label for="f-cost">هزینه (تومان)</label><input id="f-cost" class="field" inputmode="numeric"></div>
-      <div><label for="f-date">تاریخ</label><input id="f-date" class="field" type="date"></div>
+      <div><label for="f-date">تاریخ (شمسی)</label><input id="f-date" class="field" type="date"></div>
     </div>
 
     <label>وضعیت</label>
@@ -268,11 +264,17 @@ body{padding-left:env(safe-area-inset-left,0px);padding-right:env(safe-area-inse
                         .replace(/[٠-٩]/g, function(d){ return '٠١٢٣٤٥٦٧٨٩'.indexOf(d); });
   }
   function today(){ var d = new Date(); return d.getFullYear() + '-' + String(d.getMonth()+1).padStart(2,'0') + '-' + String(d.getDate()).padStart(2,'0'); }
+  
+  // تبدیل تاریخ به شمسی با امکانات بومی مرورگر (بدون نیاز به کتابخانه خارجی سنگین)
   function fmtDate(iso){
     if(!iso) return '';
-    try { return new Date(iso + 'T12:00:00').toLocaleDateString('fa-IR-u-ca-persian', {year:'numeric', month:'long', day:'numeric'}); }
-    catch(e){ return iso; }
+    try {
+      var d = new Date(iso + 'T12:00:00');
+      if(isNaN(d.getTime())) return iso;
+      return new Intl.DateTimeFormat('fa-IR', { calendar: 'persian', year: 'numeric', month: 'long', day: 'numeric' }).format(d);
+    } catch(e){ return iso; }
   }
+
   function fmtCost(n){
     if(n === '' || n == null || isNaN(n)) return '';
     return Number(n).toLocaleString('fa-IR') + ' تومان';
@@ -282,29 +284,25 @@ body{padding-left:env(safe-area-inset-left,0px);padding-right:env(safe-area-inse
     clearTimeout(toast.t); toast.t = setTimeout(function(){ t.hidden = true; }, ms || 2200);
   }
 
-  /* ---------- پایگاه داده محلی: IndexedDB + fallback ---------- */
-  var DB_NAME = 'repair_archive_db', DB_VERSION = 1, STORE = 'items', db = null, storageMode = 'indexeddb';
+  var DB_NAME = 'repair_archive_db', DB_VERSION = 1, STORE = 'items', db = null;
   function openDB(){
-    return new Promise(function(resolve,reject){
-      if(!window.indexedDB){ storageMode='localStorage'; resolve(null); return; }
+    return new Promise(function(resolve){
+      if(!window.indexedDB){ resolve(null); return; }
       var req;
-      try{ req=indexedDB.open(DB_NAME, DB_VERSION); }catch(e){ storageMode='localStorage'; resolve(null); return; }
+      try{ req=indexedDB.open(DB_NAME, DB_VERSION); }catch(e){ resolve(null); return; }
       req.onupgradeneeded=function(e){
         var d=e.target.result;
         if(!d.objectStoreNames.contains(STORE)) d.createObjectStore(STORE,{keyPath:'id'});
       };
-      req.onsuccess=function(){ db=req.result; db.onversionchange=function(){db.close();}; resolve(db); };
-      req.onerror=function(){ storageMode='localStorage'; resolve(null); };
+      req.onsuccess=function(){ db=req.result; resolve(db); };
+      req.onerror=function(){ resolve(null); };
     });
   }
-  function lsLoad(){
-    try{ var data=localStorage.getItem('repair_archive_items'); return data?JSON.parse(data):[]; }catch(e){ return []; }
-  }
   function idbAll(){
-    return new Promise(function(resolve,reject){
+    return new Promise(function(resolve){
       if(!db){resolve([]);return;}
       var tx=db.transaction(STORE,'readonly'), req=tx.objectStore(STORE).getAll();
-      req.onsuccess=function(){resolve(req.result||[])}; req.onerror=function(){reject(req.error)};
+      req.onsuccess=function(){resolve(req.result||[])}; req.onerror=function(){resolve([])};
     });
   }
   function idbPut(item){
@@ -324,20 +322,9 @@ body{padding-left:env(safe-area-inset-left,0px);padding-right:env(safe-area-inse
   async function initStorage(){
     await openDB();
     if(db){
-      var existing=await idbAll();
-      if(!existing.length){
-        var old=lsLoad();
-        if(old.length){
-          var tx=db.transaction(STORE,'readwrite'), store=tx.objectStore(STORE);
-          old.forEach(function(it){ if(it && it.id) store.put(it); });
-          await new Promise(function(resolve){tx.oncomplete=resolve;tx.onerror=resolve;});
-        }
-      }
-      try{localStorage.removeItem('repair_archive_items');}catch(e){}
-      items=await idbAll();
-    }else{
-      items=lsLoad();
-      $('warn').innerHTML='<div class="warn">حافظهٔ پیشرفتهٔ مرورگر در دسترس نیست؛ اطلاعات در حافظهٔ معمول مرورگر ذخیره می‌شود. برای جلوگیری از دست‌رفتن اطلاعات، مرتب «پشتیبان‌گیری» کنید.</div>';
+      items = await idbAll();
+    } else {
+      try{ var data=localStorage.getItem('repair_archive_items'); items = data?JSON.parse(data):[]; }catch(e){ items=[]; }
     }
   }
   async function saveItem(item){
@@ -345,13 +332,13 @@ body{padding-left:env(safe-area-inset-left,0px);padding-right:env(safe-area-inse
       if(db){ await idbPut(item); return true; }
       items=items.filter(function(x){return x.id!==item.id}).concat([item]);
       localStorage.setItem('repair_archive_items',JSON.stringify(items)); return true;
-    }catch(e){ toast('ذخیره انجام نشد؛ ابتدا پشتیبان بگیرید یا فضای ذخیره‌سازی را بررسی کنید.',5000); return false; }
+    }catch(e){ toast('ذخیره انجام نشد.',5000); return false; }
   }
   async function deleteItem(id){
     try{
       if(db){ await idbDelete(id); return true; }
       items=items.filter(function(x){return x.id!==id}); localStorage.setItem('repair_archive_items',JSON.stringify(items)); return true;
-    }catch(e){toast('حذف انجام نشد',4000);return false;}
+    }catch(e){return false;}
   }
   function validateItem(it){
     return it && typeof it==='object' && it.id && typeof it.name==='string' && ['repair','project'].indexOf(it.kind)>=0 && ['wait','work','done'].indexOf(it.status)>=0;
@@ -362,7 +349,7 @@ body{padding-left:env(safe-area-inset-left,0px);padding-right:env(safe-area-inse
   }
   async function exportData(){
     var all=db?await idbAll():items.slice();
-    if(!all.length){toast('هنوز موردی برای پشتیبان‌گیری وجود ندارد');return;}
+    if(!all.length){toast('موردی برای پشتیبان‌گیری وجود ندارد');return;}
     var payload={app:'آرشیو تعمیرات و پروژه‌ها',version:2,exportedAt:new Date().toISOString(),items:all};
     downloadText('backup-repair-archive-'+today()+'.json',JSON.stringify(payload));
     toast('فایل پشتیبان ساخته شد');
@@ -370,22 +357,21 @@ body{padding-left:env(safe-area-inset-left,0px);padding-right:env(safe-area-inse
   async function importData(file){
     try{
       var obj=JSON.parse(await file.text()), incoming=Array.isArray(obj)?obj:obj.items;
-      if(!Array.isArray(incoming)) throw new Error('format');
-      incoming=incoming.filter(validateItem); if(!incoming.length) throw new Error('empty');
+      if(!Array.isArray(incoming)) throw new Error();
+      incoming=incoming.filter(validateItem); if(!incoming.length) throw new Error();
       var current=db?await idbAll():items.slice(), map={}; current.forEach(function(x){map[x.id]=x});
       incoming.forEach(function(x){map[x.id]=x});
       var merged=Object.keys(map).map(function(k){return map[k]});
-      if(db){var tx=db.transaction(STORE,'readwrite'),store=tx.objectStore(STORE); incoming.forEach(function(x){store.put(x)}); await new Promise(function(resolve,reject){tx.oncomplete=resolve;tx.onerror=function(){reject(tx.error)}});}
-      else{items=merged;localStorage.setItem('repair_archive_items',JSON.stringify(items));}
+      if(db){var tx=db.transaction(STORE,'readwrite'),store=tx.objectStore(STORE); incoming.forEach(function(x){store.put(x)}); await new Promise(function(res){tx.oncomplete=res;tx.onerror=res;});}
       items=db?await idbAll():merged; renderList(); toast(incoming.length.toLocaleString('fa-IR')+' مورد بازیابی شد');
-    }catch(e){toast('فایل پشتیبان معتبر نیست یا خوانده نشد.',5000)}
+    }catch(e){toast('فایل پشتیبان معتبر نیست.',5000)}
   }
 
-  /* ---------- list ---------- */
   var ICO = {
     repair:'<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14.7 6.3a4 4 0 0 0-5.4 5.1L3 17.7 6.3 21l6.3-6.3a4 4 0 0 0 5.1-5.4l-2.6 2.6-2.4-.6-.6-2.4z"/></svg>',
     project:'<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="7" y="7" width="10" height="10" rx="1.5"/><path d="M10 3v4M14 3v4M10 17v4M14 17v4M3 10h4M3 14h4M17 10h4M17 14h4"/></svg>'
   };
+
   function renderStats(){
     var c = {wait:0, work:0, done:0};
     items.forEach(function(it){ if(c[it.status] != null) c[it.status]++; });
@@ -411,8 +397,8 @@ body{padding-left:env(safe-area-inset-left,0px);padding-right:env(safe-area-inse
     $('count').textContent = items.length ? shown.length.toLocaleString('fa-IR') + ' مورد از ' + items.length.toLocaleString('fa-IR') : '';
     if(!shown.length){
       $('list').innerHTML = items.length
-        ? '<div class="empty"><p>موردی پیدا نشد.</p><p>عبارت جستجو یا فیلتر وضعیت را عوض کنید.</p></div>'
-        : '<div class="empty"><svg width="220" height="140" viewBox="0 0 220 140" fill="none" aria-hidden="true"><rect x="8" y="8" width="204" height="124" rx="14" fill="#0f5b4a"/><g stroke="#fff" stroke-opacity=".3" stroke-width="3" stroke-linecap="round"><path d="M22 40h40l14 14h12M22 100h36l16-16h14M198 40h-40l-14 14h-12M198 100h-36l-16-16h-14"/></g><rect x="88" y="42" width="44" height="44" rx="5" fill="#0b3b31" stroke="#e9b824" stroke-width="2"/><circle cx="98" cy="52" r="3" fill="#e9b824"/><g stroke="#e9b824" stroke-width="3" stroke-linecap="round"><path d="M96 34v8M110 34v8M124 34v8M96 86v8M110 86v8M124 86v8"/></g><circle cx="62" cy="54" r="5" fill="#e9b824"/><circle cx="58" cy="84" r="5" fill="#e9b824"/><circle cx="158" cy="54" r="5" fill="#e9b824"/><circle cx="162" cy="84" r="5" fill="#e9b824"/><circle cx="184" cy="24" r="12" fill="#2fd27a" fill-opacity=".25"/><circle cx="184" cy="24" r="6" fill="#2fd27a"/></svg><p><b>هنوز چیزی ثبت نشده</b></p><p>با دکمه + اولین تعمیر یا پروژه را اضافه کنید.</p></div>';
+        ? '<div class="empty"><p>موردی پیدا نشد.</p></div>'
+        : '<div class="empty"><p><b>هنوز چیزی ثبت نشده</b></p><p>با دکمه + اولین تعمیر یا پروژه را اضافه کنید.</p></div>';
       return;
     }
     $('list').innerHTML = shown.map(function(it){
@@ -429,7 +415,6 @@ body{padding-left:env(safe-area-inset-left,0px);padding-right:env(safe-area-inse
     }).join('');
   }
 
-  /* ---------- form ---------- */
   var rec = null, recStream = null, recChunks = [], recTimer = null, recSeconds = 0;
   function seg(el, defs, cur, cb){
     el.innerHTML = Object.keys(defs).map(function(k){
@@ -443,15 +428,15 @@ body{padding-left:env(safe-area-inset-left,0px);padding-right:env(safe-area-inse
   }
   function renderPhotos(){
     var h = draft.photos.map(function(p, i){
-      return '<div class="ph"><img alt="عکس '+(i+1)+'" src="'+p+'" data-zoom="'+i+'"><button type="button" class="x" data-rm="'+i+'" aria-label="حذف عکس">×</button></div>';
+      return '<div class="ph"><img alt="" src="'+p+'" data-zoom="'+i+'"><button type="button" class="x" data-rm="'+i+'">×</button></div>';
     }).join('');
     h += '<button type="button" class="add-ph" id="add-cam"><span>📷</span>دوربین</button>';
-    h += '<button type="button" class="add-ph" id="add-ph"><span>+</span>از گالری</button>';
+    h += '<button type="button" class="add-ph" id="add-ph"><span>+</span>گالری</button>';
     $('f-photos').innerHTML = h;
   }
   function renderVoices(){
     $('f-voices').innerHTML = (draft.voices || []).map(function(v, i){
-      return '<div class="vc"><audio controls src="'+v+'"></audio><button type="button" class="x" data-rmv="'+i+'" aria-label="حذف صوت">×</button></div>';
+      return '<div class="vc"><audio controls src="'+v+'"></audio><button type="button" class="x" data-rmv="'+i+'">×</button></div>';
     }).join('');
   }
   function openForm(it){
@@ -488,7 +473,6 @@ body{padding-left:env(safe-area-inset-left,0px);padding-right:env(safe-area-inse
         img.onerror = function(){ res(null); };
         img.src = fr.result;
       };
-      fr.onerror = function(){ res(null); };
       fr.readAsDataURL(file);
     });
   }
@@ -521,7 +505,6 @@ body{padding-left:env(safe-area-inset-left,0px);padding-right:env(safe-area-inse
     toast('ذخیره شد');
   }
 
-  /* Audio Recorder */
   function updateRecTime(){
     var m = Math.floor(recSeconds / 60), s = recSeconds % 60;
     $('rec-time').textContent = String(m).padStart(2,'0') + ':' + String(s).padStart(2,'0');
@@ -531,7 +514,6 @@ body{padding-left:env(safe-area-inset-left,0px);padding-right:env(safe-area-inse
       recStream = await navigator.mediaDevices.getUserMedia({audio:true});
       var options = {};
       if(MediaRecorder.isTypeSupported('audio/webm;codecs=opus')) options.mimeType = 'audio/webm;codecs=opus';
-      else if(MediaRecorder.isTypeSupported('audio/mp4')) options.mimeType = 'audio/mp4';
       rec = new MediaRecorder(recStream, options);
       recChunks = [];
       rec.ondataavailable = function(e){ if(e.data && e.data.size > 0) recChunks.push(e.data); };
@@ -550,7 +532,7 @@ body{padding-left:env(safe-area-inset-left,0px);padding-right:env(safe-area-inse
       $('rec-label').textContent = 'توقف ضبط';
       recTimer = setInterval(function(){ recSeconds++; updateRecTime(); }, 1000);
     }catch(e){
-      toast('دسترسی به میکروفون داده نشد یا پشتیبانی نمی‌شود');
+      toast('دسترسی به میکروفون داده نشد');
     }
   }
   function stopRec(cancel){
@@ -565,11 +547,10 @@ body{padding-left:env(safe-area-inset-left,0px);padding-right:env(safe-area-inse
     $('rec-time').textContent = '';
   }
 
-  /* ---------- detail ---------- */
   function showDetail(it){
     openId = it.id;
     var phs = (it.photos || []).map(function(p, i){
-      return '<div class="hero"><img alt="تصویر '+(i+1)+'" src="'+p+'" data-zoom-detail="'+i+'"></div>';
+      return '<div class="hero"><img alt="" src="'+p+'" data-zoom-detail="'+i+'"></div>';
     }).join('');
     var vcs = (it.voices || []).map(function(v){
       return '<div class="vc"><audio controls src="'+v+'"></audio></div>';
@@ -578,7 +559,7 @@ body{padding-left:env(safe-area-inset-left,0px);padding-right:env(safe-area-inse
       + '<dt>نوع</dt><dd>'+KIND[it.kind]+'</dd>'
       + '<dt>وضعیت</dt><dd>'+STATUS[it.status]+'</dd>'
       + (it.device ? '<dt>دستگاه</dt><dd>'+esc(it.device)+'</dd>' : '')
-      + (it.cust ? '<dt>مشتی</dt><dd>'+esc(it.cust)+'</dd>' : '')
+      + (it.cust ? '<dt>مشتری</dt><dd>'+esc(it.cust)+'</dd>' : '')
       + (it.phone ? '<dt>تلفن</dt><dd><a href="tel:'+esc(it.phone)+'" dir="ltr" style="display:inline-block">'+esc(it.phone)+'</a></dd>' : '')
       + (it.date ? '<dt>تاریخ</dt><dd>'+fmtDate(it.date)+'</dd>' : '')
       + (it.cost !== '' && it.cost != null ? '<dt>هزینه</dt><dd>'+fmtCost(it.cost)+'</dd>' : '')
@@ -591,7 +572,7 @@ body{padding-left:env(safe-area-inset-left,0px);padding-right:env(safe-area-inse
       + (vcs ? '<label>یادداشت‌های صوتی</label><div class="voices">'+vcs+'</div>' : '')
       + '<div class="actions">'
       + '<button class="btn" id="d-edit">ویرایش</button>'
-      + '<button class="btn" id="d-share">اشتراک‌گذاری جزئیات</button>'
+      + '<button class="btn" id="d-share">اشتراک‌گذاری</button>'
       + '<button class="btn danger" id="d-del">حذف</button>'
       + '</div>';
     $('detail').hidden = false; $('detail').scrollTop = 0;
@@ -613,18 +594,16 @@ body{padding-left:env(safe-area-inset-left,0px);padding-right:env(safe-area-inse
 
   function shareListText(){
     var shown = items.filter(matches);
-    return '📋 لیست آرشیو تعمیرات و پروژه‌ها (' + shown.length.toLocaleString('fa-IR') + ' مورد):\n\n' + shown.map(function(it, idx){
-      return (idx+1) + '. ' + (it.name || '') + (it.device ? ' ('+it.device+')' : '') + ' - ' + STATUS[it.status] + (it.cost !== '' && it.cost != null ? ' - ' + fmtCost(it.cost) : '');
+    return '📋 لیست آرشیو تعمیرات (' + shown.length.toLocaleString('fa-IR') + ' مورد):\n\n' + shown.map(function(it, idx){
+      return (idx+1) + '. ' + (it.name || '') + (it.device ? ' ('+it.device+')' : '') + ' - ' + STATUS[it.status];
     }).join('\n');
   }
 
-  /* ---------- events ---------- */
   document.addEventListener('DOMContentLoaded', async function(){
     await initStorage();
     renderChips();
     renderList();
 
-    // Theme toggle
     var darkPref = window.matchMedia('(prefers-color-scheme: dark)');
     function updateThemeBtn(){
       var cur = document.documentElement.getAttribute('data-theme');
@@ -640,12 +619,7 @@ body{padding-left:env(safe-area-inset-left,0px);padding-right:env(safe-area-inse
       try{ localStorage.setItem('repair_archive_theme', next); }catch(e){}
       updateThemeBtn();
     };
-    try{
-      var savedTheme = localStorage.getItem('repair_archive_theme');
-      if(savedTheme) document.documentElement.setAttribute('data-theme', savedTheme);
-    }catch(e){}
 
-    // Search & Filter
     $('q').oninput = function(e){ query = e.target.value; renderList(); };
     $('chips').onclick = function(e){
       var b = e.target.closest('button'); if(!b) return;
@@ -659,105 +633,69 @@ body{padding-left:env(safe-area-inset-left,0px);padding-right:env(safe-area-inse
       renderChips(); renderList();
     };
 
-    // List click
     $('list').onclick = function(e){
       var itemEl = e.target.closest('.item'); if(!itemEl) return;
       var it = items.find(function(x){ return x.id === itemEl.dataset.id; });
       if(it) showDetail(it);
     };
 
-    // FAB & Toolbar
     $('add').onclick = function(){ openForm(null); };
     $('export-data').onclick = exportData;
     $('import-data').onclick = function(){ $('import-file').click(); };
     $('import-file').onchange = function(e){ if(e.target.files[0]) importData(e.target.files[0]); e.target.value = ''; };
     $('share-all').onclick = async function(){
       var text = shareListText();
-      if(navigator.share){
-        try{ await navigator.share({title:'آرشیو تعمیرات', text:text}); return; }catch(e){}
-      }
-      navigator.clipboard.writeText(text).then(function(){ toast('لیست در کلیپ‌بورد کپی شد'); }).catch(function(){ toast('امکان کپی لیست نبود'); });
+      if(navigator.share){ try{ await navigator.share({title:'آرشیو تعمیرات', text:text}); return; }catch(e){} }
+      navigator.clipboard.writeText(text).then(function(){ toast('لیست در کلیپ‌بورد کپی شد'); });
     };
 
-    // Form buttons
     $('f-cancel').onclick = closeForm;
     $('f-save').onclick = save;
 
-    // Photos handling
     $('f-photos').onclick = async function(e){
       var rm = e.target.dataset.rm;
-      if(rm != null){
-        draft.photos.splice(Number(rm), 1);
-        renderPhotos(); return;
-      }
+      if(rm != null){ draft.photos.splice(Number(rm), 1); renderPhotos(); return; }
       var zoom = e.target.dataset.zoom;
-      if(zoom != null){
-        $('lb-img').src = draft.photos[Number(zoom)];
-        $('lb').hidden = false;
-        return;
-      }
+      if(zoom != null){ $('lb-img').src = draft.photos[Number(zoom)]; $('lb').hidden = false; return; }
       if(e.target.closest('#add-cam')) $('f-cam').click();
       if(e.target.closest('#add-ph')) $('f-file').click();
     };
     $('f-cam').onchange = async function(e){
       var files = e.target.files;
-      if(files && files[0]){
-        var b64 = await shrink(files[0]);
-        if(b64) draft.photos.push(b64);
-        renderPhotos();
-      }
+      if(files && files[0]){ var b64 = await shrink(files[0]); if(b64) draft.photos.push(b64); renderPhotos(); }
       e.target.value = '';
     };
     $('f-file').onchange = async function(e){
       var files = e.target.files;
       if(files){
-        for(var i=0; i<files.length; i++){
-          var b64 = await shrink(files[i]);
-          if(b64) draft.photos.push(b64);
-        }
+        for(var i=0; i<files.length; i++){ var b64 = await shrink(files[i]); if(b64) draft.photos.push(b64); }
         renderPhotos();
       }
       e.target.value = '';
     };
 
-    // Audio recording events
-    $('rec-btn').onclick = function(){
-      if(rec) stopRec(false);
-      else startRec();
-    };
-    $('rec-app').onclick = function(){
-      $('f-aud').click();
-    };
+    $('rec-btn').onclick = function(){ if(rec) stopRec(false); else startRec(); };
+    $('rec-app').onclick = function(){ $('f-aud').click(); };
     $('f-aud').onchange = function(e){
       var f = e.target.files[0];
       if(f){
         var fr = new FileReader();
-        fr.onload = function(){
-          draft.voices = (draft.voices || []).concat([fr.result]);
-          renderVoices();
-        };
+        fr.onload = function(){ draft.voices = (draft.voices || []).concat([fr.result]); renderVoices(); };
         fr.readAsDataURL(f);
       }
       e.target.value = '';
     };
     $('f-voices').onclick = function(e){
       var rmv = e.target.dataset.rmv;
-      if(rmv != null){
-        draft.voices.splice(Number(rmv), 1);
-        renderVoices();
-      }
+      if(rmv != null){ draft.voices.splice(Number(rmv), 1); renderVoices(); }
     };
 
-    // Detail sheet
     $('d-back').onclick = closeDetail;
     $('d-body').onclick = async function(e){
       var zoom = e.target.dataset.zoomDetail;
       if(zoom != null){
         var it = items.find(function(x){ return x.id === openId; });
-        if(it && it.photos && it.photos[zoom]){
-          $('lb-img').src = it.photos[zoom];
-          $('lb').hidden = false;
-        }
+        if(it && it.photos && it.photos[zoom]){ $('lb-img').src = it.photos[zoom]; $('lb').hidden = false; }
         return;
       }
       if(e.target.id === 'd-edit'){
@@ -768,17 +706,14 @@ body{padding-left:env(safe-area-inset-left,0px);padding-right:env(safe-area-inse
         var it = items.find(function(x){ return x.id === openId; });
         if(it){
           var text = shareItemText(it);
-          if(navigator.share){
-            try{ await navigator.share({title:it.name, text:text}); return; }catch(err){}
-          }
-          navigator.clipboard.writeText(text).then(function(){ toast('متن جزئیات کپی شد'); }).catch(function(){ toast('امکان کپی نبود'); });
+          if(navigator.share){ try{ await navigator.share({title:it.name, text:text}); return; }catch(err){} }
+          navigator.clipboard.writeText(text).then(function(){ toast('متن جزئیات کپی شد'); });
         }
       }
       if(e.target.id === 'd-del'){
         var btn = e.target;
         if(!btn.classList.contains('armed')){
-          btn.classList.add('armed');
-          btn.textContent = 'برای تأیید حذف دوباره بزنید';
+          btn.classList.add('armed'); btn.textContent = 'برای تأیید حذف دوباره بزنید';
           setTimeout(function(){ btn.classList.remove('armed'); btn.textContent = 'حذف'; }, 4000);
           return;
         }
@@ -788,8 +723,6 @@ body{padding-left:env(safe-area-inset-left,0px);padding-right:env(safe-area-inse
         }
       }
     };
-
-    // Lightbox close
     $('lb').onclick = function(){ $('lb').hidden = true; };
   });
 })();
