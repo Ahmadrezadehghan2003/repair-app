@@ -47,6 +47,9 @@ header.top{background:var(--board);color:var(--board-ink);padding:14px 16px 16px
 .chip[aria-pressed="true"]{background:var(--silk);border-color:var(--silk);color:var(--silk-ink);font-weight:700}
 
 main{padding:14px 14px 110px;max-width:720px;margin:0 auto}
+.toolbar{max-width:720px;margin:10px auto 0;padding:0 14px;display:grid;grid-template-columns:1fr 1fr 1fr auto;gap:7px}
+.toolbar .btn{padding:7px 8px;font-size:13px;min-width:0}
+@media(max-width:520px){.toolbar{grid-template-columns:1fr 1fr 1fr auto}.toolbar .btn{font-size:12px;padding:7px 5px}}
 .count{color:var(--muted);font-size:14px;margin:2px 4px 10px}
 .list{display:flex;flex-direction:column;gap:10px}
 .item{display:flex;gap:12px;background:var(--surface);border:1px solid var(--line);border-radius:12px;padding:10px;text-align:right;width:100%;cursor:pointer;align-items:stretch}
@@ -166,7 +169,13 @@ body{background-image:radial-gradient(circle,var(--line) 1px,transparent 1.3px);
   <input id="q" class="search" type="search" placeholder="جستجو: عنوان، دستگاه، مشتری، تلفن…" aria-label="جستجو">
   <div class="chips" id="chips" role="group" aria-label="فیلتر وضعیت"></div>
 </header>
-<div style="max-width:720px;margin:10px auto 0;padding:0 14px" id="share-all-wrap"><button type="button" class="btn" id="share-all" style="width:100%">اشتراک‌گذاری کل لیست</button></div>
+<div class="toolbar" id="tools-wrap">
+  <button type="button" class="btn" id="share-all">اشتراک‌گذاری لیست</button>
+  <button type="button" class="btn" id="export-data">پشتیبان‌گیری</button>
+  <button type="button" class="btn" id="import-data">بازیابی</button>
+  <button type="button" class="btn" id="theme-toggle" aria-label="تغییر حالت نمایش">🌙</button>
+</div>
+<input id="import-file" type="file" accept="application/json,.json" hidden>
 
 <main>
   <div id="warn"></div>
@@ -261,24 +270,103 @@ body{background-image:radial-gradient(circle,var(--line) 1px,transparent 1.3px);
     clearTimeout(toast.t); toast.t = setTimeout(function(){ t.hidden = true; }, ms || 2200);
   }
 
-  /* ---------- Stable Storage (localStorage) ---------- */
-  function loadItems(){
-    try {
-      var data = localStorage.getItem('repair_archive_items');
-      return data ? JSON.parse(data) : [];
-    } catch(e) {
-      return [];
+  /* ---------- پایگاه داده محلی: IndexedDB + fallback ---------- */
+  var DB_NAME = 'repair_archive_db', DB_VERSION = 1, STORE = 'items', db = null, storageMode = 'indexeddb';
+  function openDB(){
+    return new Promise(function(resolve,reject){
+      if(!window.indexedDB){ storageMode='localStorage'; resolve(null); return; }
+      var req;
+      try{ req=indexedDB.open(DB_NAME, DB_VERSION); }catch(e){ storageMode='localStorage'; resolve(null); return; }
+      req.onupgradeneeded=function(e){
+        var d=e.target.result;
+        if(!d.objectStoreNames.contains(STORE)) d.createObjectStore(STORE,{keyPath:'id'});
+      };
+      req.onsuccess=function(){ db=req.result; db.onversionchange=function(){db.close();}; resolve(db); };
+      req.onerror=function(){ storageMode='localStorage'; resolve(null); };
+    });
+  }
+  function lsLoad(){
+    try{ var data=localStorage.getItem('repair_archive_items'); return data?JSON.parse(data):[]; }catch(e){ return []; }
+  }
+  function idbAll(){
+    return new Promise(function(resolve,reject){
+      if(!db){resolve([]);return;}
+      var tx=db.transaction(STORE,'readonly'), req=tx.objectStore(STORE).getAll();
+      req.onsuccess=function(){resolve(req.result||[])}; req.onerror=function(){reject(req.error)};
+    });
+  }
+  function idbPut(item){
+    return new Promise(function(resolve,reject){
+      if(!db){reject(new Error('no-db'));return;}
+      var tx=db.transaction(STORE,'readwrite'); tx.objectStore(STORE).put(item);
+      tx.oncomplete=function(){resolve(true)}; tx.onerror=function(){reject(tx.error)};
+    });
+  }
+  function idbDelete(id){
+    return new Promise(function(resolve,reject){
+      if(!db){reject(new Error('no-db'));return;}
+      var tx=db.transaction(STORE,'readwrite'); tx.objectStore(STORE).delete(id);
+      tx.oncomplete=function(){resolve(true)}; tx.onerror=function(){reject(tx.error)};
+    });
+  }
+  async function initStorage(){
+    await openDB();
+    if(db){
+      var existing=await idbAll();
+      if(!existing.length){
+        var old=lsLoad();
+        if(old.length){
+          var tx=db.transaction(STORE,'readwrite'), store=tx.objectStore(STORE);
+          old.forEach(function(it){ if(it && it.id) store.put(it); });
+          await new Promise(function(resolve){tx.oncomplete=resolve;tx.onerror=resolve;});
+        }
+      }
+      try{localStorage.removeItem('repair_archive_items');}catch(e){}
+      items=await idbAll();
+    }else{
+      items=lsLoad();
+      $('warn').innerHTML='<div class="warn">حافظهٔ پیشرفتهٔ مرورگر در دسترس نیست؛ اطلاعات در حافظهٔ معمول مرورگر ذخیره می‌شود. برای جلوگیری از دست‌رفتن اطلاعات، مرتب «پشتیبان‌گیری» کنید.</div>';
     }
   }
-
-  function saveItems(){
-    try {
-      localStorage.setItem('repair_archive_items', JSON.stringify(items));
-      return true;
-    } catch(e) {
-      toast('خطا: حافظه دستگاه پر شده است یا اجازه ذخیره‌سازی داده نمی‌شود.');
-      return false;
-    }
+  async function saveItem(item){
+    try{
+      if(db){ await idbPut(item); return true; }
+      items=items.filter(function(x){return x.id!==item.id}).concat([item]);
+      localStorage.setItem('repair_archive_items',JSON.stringify(items)); return true;
+    }catch(e){ toast('ذخیره انجام نشد؛ ابتدا پشتیبان بگیرید یا فضای ذخیره‌سازی را بررسی کنید.',5000); return false; }
+  }
+  async function deleteItem(id){
+    try{
+      if(db){ await idbDelete(id); return true; }
+      items=items.filter(function(x){return x.id!==id}); localStorage.setItem('repair_archive_items',JSON.stringify(items)); return true;
+    }catch(e){toast('حذف انجام نشد',4000);return false;}
+  }
+  function validateItem(it){
+    return it && typeof it==='object' && it.id && typeof it.name==='string' && ['repair','project'].indexOf(it.kind)>=0 && ['wait','work','done'].indexOf(it.status)>=0;
+  }
+  function downloadText(filename,text){
+    var blob=new Blob([text],{type:'application/json;charset=utf-8'}), url=URL.createObjectURL(blob), a=document.createElement('a');
+    a.href=url; a.download=filename; document.body.appendChild(a); a.click(); a.remove(); setTimeout(function(){URL.revokeObjectURL(url)},1000);
+  }
+  async function exportData(){
+    var all=db?await idbAll():items.slice();
+    if(!all.length){toast('هنوز موردی برای پشتیبان‌گیری وجود ندارد');return;}
+    var payload={app:'آرشیو تعمیرات و پروژه‌ها',version:2,exportedAt:new Date().toISOString(),items:all};
+    downloadText('backup-repair-archive-'+today()+'.json',JSON.stringify(payload));
+    toast('فایل پشتیبان ساخته شد');
+  }
+  async function importData(file){
+    try{
+      var obj=JSON.parse(await file.text()), incoming=Array.isArray(obj)?obj:obj.items;
+      if(!Array.isArray(incoming)) throw new Error('format');
+      incoming=incoming.filter(validateItem); if(!incoming.length) throw new Error('empty');
+      var current=db?await idbAll():items.slice(), map={}; current.forEach(function(x){map[x.id]=x});
+      incoming.forEach(function(x){map[x.id]=x});
+      var merged=Object.keys(map).map(function(k){return map[k]});
+      if(db){var tx=db.transaction(STORE,'readwrite'),store=tx.objectStore(STORE); incoming.forEach(function(x){store.put(x)}); await new Promise(function(resolve,reject){tx.oncomplete=resolve;tx.onerror=function(){reject(tx.error)}});}
+      else{items=merged;localStorage.setItem('repair_archive_items',JSON.stringify(items));}
+      items=db?await idbAll():merged; renderList(); toast(incoming.length.toLocaleString('fa-IR')+' مورد بازیابی شد');
+    }catch(e){toast('فایل پشتیبان معتبر نیست یا خوانده نشد.',5000)}
   }
 
   /* ---------- list ---------- */
@@ -387,33 +475,16 @@ body{background-image:radial-gradient(circle,var(--line) 1px,transparent 1.3px);
     });
   }
 
-  function save(){
+  async function save(){
     if(rec){ toast('اول ضبط صدا را متوقف کنید'); return; }
-    var name = $('f-name').value.trim();
-    if(!name){ toast('عنوان را بنویسید'); $('f-name').focus(); return; }
-    var costRaw = latin($('f-cost').value).replace(/[^\d.]/g, '');
-    var record = {
-      id: editing || uid(),
-      created: draft.created || Date.now(),
-      kind: draft.kind, status: draft.status, photos: draft.photos, voices: draft.voices || [],
-      name: name,
-      device: $('f-device').value.trim(),
-      desc: $('f-desc').value.trim(),
-      cust: $('f-cust').value.trim(),
-      phone: latin($('f-phone').value).trim(),
-      cost: costRaw === '' ? '' : Number(costRaw),
-      date: $('f-date').value
-    };
-    
-    var i = items.findIndex(function(x){ return x.id === record.id; });
-    if(i >= 0) items[i] = record; else items.push(record);
-
-    if(saveItems()){
-      closeForm(); 
-      renderList();
-      if(openId === record.id) showDetail(record.id);
-      toast('ذخیره شد');
-    }
+    var name=$('f-name').value.trim();
+    if(!name){toast('عنوان را بنویسید');$('f-name').focus();return;}
+    var costRaw=latin($('f-cost').value).replace(/[^\d.]/g,'');
+    var record={id:editing||uid(),created:draft.created||Date.now(),kind:draft.kind,status:draft.status,photos:draft.photos||[],voices:draft.voices||[],name:name,device:$('f-device').value.trim(),desc:$('f-desc').value.trim(),cust:$('f-cust').value.trim(),phone:latin($('f-phone').value).trim(),cost:costRaw===''?'':Number(costRaw),date:$('f-date').value};
+    var old=items.find(function(x){return x.id===record.id;});
+    if(!(await saveItem(record))) return;
+    var i=items.findIndex(function(x){return x.id===record.id}); if(i>=0) items[i]=record; else items.push(record);
+    closeForm(); renderList(); if(openId===record.id) showDetail(record.id); toast(old?'ویرایش ذخیره شد':'مورد جدید ذخیره شد');
   }
 
   /* ---------- detail ---------- */
@@ -443,6 +514,10 @@ body{background-image:radial-gradient(circle,var(--line) 1px,transparent 1.3px);
   $('add').onclick = function(){ openForm(null); };
   $('f-cancel').onclick = closeForm;
   $('f-save').onclick = save;
+  $('export-data').onclick=exportData;
+  $('import-data').onclick=function(){ $('import-file').click(); };
+  $('import-file').onchange=function(e){ var f=e.target.files&&e.target.files[0]; e.target.value=''; if(f) importData(f); };
+  $('theme-toggle').onclick=function(){ var root=document.documentElement, cur=root.getAttribute('data-theme'); var next=cur==='dark'?'light':'dark'; root.setAttribute('data-theme',next); localStorage.setItem('repair_archive_theme',next); $('theme-toggle').textContent=next==='dark'?'☀️':'🌙'; };
   $('d-back').onclick = function(){ $('detail').hidden = true; openId = null; };
   $('q').oninput = function(e){ query = e.target.value.trim(); renderList(); };
   $('chips').onclick = function(e){
@@ -565,6 +640,7 @@ body{background-image:radial-gradient(circle,var(--line) 1px,transparent 1.3px);
     draft.voices.splice(Number(b.dataset.vrm), 1); renderVoices();
   };
   $('d-body').onclick = function(e){
+    if(e.target.id === 'd-share'){ var shareIt=items.find(function(x){return x.id===openId}); if(shareIt) shareItem(shareIt); return; }
     var z = e.target.closest('[data-zoom]');
     if(z){ var it = items.find(function(x){ return x.id === openId; }); zoom(it.photos[Number(z.dataset.zoom)]); return; }
     if(e.target.id === 'd-edit'){ openForm(items.find(function(x){ return x.id === openId; })); return; }
@@ -576,13 +652,7 @@ body{background-image:radial-gradient(circle,var(--line) 1px,transparent 1.3px);
         return;
       }
       var id = openId;
-      items = items.filter(function(x){ return x.id !== id; });
-      if(saveItems()){
-        $('detail').hidden = true; 
-        openId = null; 
-        renderList(); 
-        toast('حذف شد');
-      }
+      deleteItem(id).then(function(ok){ if(ok){ items=items.filter(function(x){return x.id!==id}); $('detail').hidden=true; openId=null; renderList(); toast('حذف شد'); } });
     }
   };
   function itemText(it){
@@ -627,9 +697,6 @@ body{background-image:radial-gradient(circle,var(--line) 1px,transparent 1.3px);
     }
   }
 
-  $('d-share').onclick = function(){
-    var it = items.find(function(x){ return x.id === openId; }); if(it) shareItem(it);
-  };
   $('share-all').onclick = function(){
     var shown = items.filter(matches).sort(function(a,b){ return (b.date||'').localeCompare(a.date||'') || b.created - a.created; });
     if(!shown.length){ toast('موردی برای اشتراک‌گذاری نیست'); return; }
@@ -658,11 +725,10 @@ body{background-image:radial-gradient(circle,var(--line) 1px,transparent 1.3px);
   });
 
   /* ---------- start ---------- */
-  items = loadItems();
-  renderChips();
-  renderList();
-
-  if(navigator.storage && navigator.storage.persist){ try{ navigator.storage.persist(); }catch(e){} }
+  (function(){ var saved=localStorage.getItem('repair_archive_theme'); if(saved==='dark'||saved==='light'){ document.documentElement.setAttribute('data-theme',saved); $('theme-toggle').textContent=saved==='dark'?'☀️':'🌙'; } })();
+  renderChips(); renderList();
+  initStorage().then(function(){ renderList(); }).catch(function(){ renderList(); });
+  if(navigator.storage&&navigator.storage.persist){ navigator.storage.persist().catch(function(){}); }
 })();
 </script>
 </body>
