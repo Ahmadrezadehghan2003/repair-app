@@ -4,6 +4,12 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <meta name="theme-color" content="#0f5b4a">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="آرشیو تعمیرات">
+<link rel="manifest" href="data:application/manifest+json,%7B%22name%22%3A%22%D8%A2%D8%B1%D8%B4%DB%8C%D9%88%20%D8%AA%D8%B9%D9%85%DB%8C%D8%B1%D8%A7%D8%AA%22%2C%22short_name%22%3A%22%D8%A2%D8%B1%D8%B4%DB%8C%D9%88%22%2C%22start_url%22%3A%22.%22%2C%22display%22%3A%22standalone%22%2C%22orientation%22%3A%22portrait%22%2C%22theme_color%22%3A%22%230f5b4a%22%2C%22background_color%22%3A%22%23eef2f0%22%7D">
+
 <title>آرشیو تعمیرات</title>
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Vazirmatn:wght@400;500;700;800&display=swap">
 <style>
@@ -157,6 +163,12 @@ body{background-image:radial-gradient(circle,var(--line) 1px,transparent 1.3px);
 .meta{border-inline-start:6px solid var(--silk)}
 .empty svg{opacity:1;margin-bottom:14px;max-width:100%;height:auto}
 .empty b{color:var(--ink);font-size:18px}
+
+/* Mobile fullscreen / safe-area */
+body{padding-left:env(safe-area-inset-left,0px);padding-right:env(safe-area-inset-right,0px)}
+#fullscreenBtn{position:fixed;left:10px;top:calc(10px + env(safe-area-inset-top,0px));z-index:1000;width:42px;height:42px;border:1px solid var(--line);border-radius:12px;background:var(--surface);color:var(--ink);box-shadow:0 4px 16px rgba(0,0,0,.12);font-size:22px;display:grid;place-items:center;cursor:pointer}
+@media (min-width:700px){#fullscreenBtn{display:none}}
+@media (display-mode: fullscreen),(display-mode: standalone){body{min-height:100dvh}.app{min-height:100dvh}}
 </style>
 </head>
 <body>
@@ -729,6 +741,30 @@ body{background-image:radial-gradient(circle,var(--line) 1px,transparent 1.3px);
   renderChips(); renderList();
   initStorage().then(function(){ renderList(); }).catch(function(){ renderList(); });
   if(navigator.storage&&navigator.storage.persist){ navigator.storage.persist().catch(function(){}); }
+})();
+</script>
+
+<script>
+(function(){
+  const b=document.getElementById('fullscreenBtn');
+  if(!b) return;
+  function isFull(){return !!(document.fullscreenElement || document.webkitFullscreenElement);}
+  async function enter(){
+    try{
+      if(isFull()) return;
+      const el=document.documentElement;
+      if(el.requestFullscreen) await el.requestFullscreen({navigationUI:'hide'});
+      else if(el.webkitRequestFullscreen) el.webkitRequestFullscreen();
+    }catch(e){}
+  }
+  function exit(){
+    try{
+      if(document.exitFullscreen) document.exitFullscreen();
+      else if(document.webkitExitFullscreen) document.webkitExitFullscreen();
+    }catch(e){}
+  }
+  b.addEventListener('click',function(){ isFull()?exit():enter(); });
+  document.addEventListener('fullscreenchange',()=>{b.textContent=isFull()?'×':'⛶';});
 })();
 </script>
 </body>
