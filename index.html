@@ -266,7 +266,11 @@ body{background-image:radial-gradient(circle,var(--line) 1px,transparent 1.3px);
     return new Promise(function(res, rej){
       try{
         var r = indexedDB.open('repair-archive', 1);
-        r.onupgradeneeded = function(){ r.result.createObjectStore('items', {keyPath:'id'}); };
+        r.onupgradeneeded = function(){
+          if(!r.result.objectStoreNames.contains('items')){
+            r.result.createObjectStore('items', {keyPath:'id'});
+          }
+        };
         r.onsuccess = function(){ res(r.result); };
         r.onerror = function(){ rej(r.error); };
       }catch(e){ rej(e); }
@@ -274,25 +278,34 @@ body{background-image:radial-gradient(circle,var(--line) 1px,transparent 1.3px);
   }
   function dbAll(){
     return new Promise(function(res, rej){
-      var rq = db.transaction('items').objectStore('items').getAll();
-      rq.onsuccess = function(){ res(rq.result || []); };
-      rq.onerror = function(){ rej(rq.error); };
+      if(!db) { res([]); return; }
+      try {
+        var rq = db.transaction('items').objectStore('items').getAll();
+        rq.onsuccess = function(){ res(rq.result || []); };
+        rq.onerror = function(){ rej(rq.error); };
+      } catch(e) { res([]); }
     });
   }
   function dbPut(item){
-    if(memoryOnly) return Promise.resolve();
+    if(memoryOnly || !db) return Promise.resolve();
     return new Promise(function(res, rej){
-      var tx = db.transaction('items','readwrite');
-      tx.objectStore('items').put(item);
-      tx.oncomplete = res; tx.onerror = function(){ rej(tx.error); };
+      try {
+        var tx = db.transaction('items','readwrite');
+        tx.objectStore('items').put(item);
+        tx.oncomplete = res; 
+        tx.onerror = function(){ rej(tx.error); };
+      } catch(e) { rej(e); }
     });
   }
   function dbDel(id){
-    if(memoryOnly) return Promise.resolve();
+    if(memoryOnly || !db) return Promise.resolve();
     return new Promise(function(res, rej){
-      var tx = db.transaction('items','readwrite');
-      tx.objectStore('items').delete(id);
-      tx.oncomplete = res; tx.onerror = function(){ rej(tx.error); };
+      try {
+        var tx = db.transaction('items','readwrite');
+        tx.objectStore('items').delete(id);
+        tx.oncomplete = res; 
+        tx.onerror = function(){ rej(tx.error); };
+      } catch(e) { rej(e); }
     });
   }
 
@@ -649,8 +662,12 @@ body{background-image:radial-gradient(circle,var(--line) 1px,transparent 1.3px);
 
   /* ---------- start ---------- */
   renderChips();
-  openDB().then(function(d){ db = d; return dbAll(); }).then(function(all){
-    items = all; renderList();
+  openDB().then(function(d){ 
+    db = d; 
+    return dbAll(); 
+  }).then(function(all){
+    items = all; 
+    renderList();
   }).catch(function(){
     memoryOnly = true;
     $('warn').innerHTML = '<div class="warn">ذخیره‌سازی مرورگر در دسترس نیست. اطلاعات فقط تا بستن این صفحه می‌ماند.</div>';
