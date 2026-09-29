@@ -10,7 +10,6 @@
 <meta name="apple-mobile-web-app-title" content="آرشیو تعمیرات">
 <title>آرشیو تعمیرات و پروژه‌ها</title>
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Vazirmatn:wght@400;500;700;800&display=swap">
-<!-- ★ diff 1: jalaali-js vendor — قبل از style -->
 <script src="vendor/jalaali.min.js"></script>
 <style>
 :root{
@@ -164,7 +163,6 @@ textarea.field{min-height:110px;resize:vertical}
 .toast[hidden]{display:none}
 @media (prefers-reduced-motion:reduce){*{transition:none!important;animation:none!important}}
 </style>
-</head>
 <body>
 
 <header class="top">
@@ -288,7 +286,6 @@ textarea.field{min-height:110px;resize:vertical}
   }
   function faDigits(n){ return String(n).replace(/[0-9]/g, function(d){ return '۰۱۲۳۴۵۶۷۸۹'[d]; }); }
 
-  // ★ diff 2: parseCost
   function parseCost(raw){
     var rawStr = String(raw == null ? '' : raw);
     if(/[eE]/.test(rawStr)) return '';
@@ -403,7 +400,6 @@ textarea.field{min-height:110px;resize:vertical}
     }catch(e){ return false; }
   }
 
-  // ★ diff 3: byteLengthOfDataURL + validateItem
   function byteLengthOfDataURL(s){
     if(typeof s !== 'string') return 0;
     var i = s.indexOf(',');
@@ -460,7 +456,6 @@ textarea.field{min-height:110px;resize:vertical}
       var obj = JSON.parse(text);
       var incoming = Array.isArray(obj) ? obj : obj.items;
       if(!Array.isArray(incoming)) throw new Error('bad-format');
-      // ★ diff 3b: map + filter
       incoming = incoming.map(validateItem).filter(Boolean);
       if(!incoming.length) throw new Error('empty');
       if(db){
@@ -538,8 +533,6 @@ textarea.field{min-height:110px;resize:vertical}
     p.hidden = nextHidden;
     if(!p.hidden) renderJalaliGrid();
   }
-
-  // ★ diff 4: isJalaliLeap + daysInPersianMonth(jy, month)
   function isJalaliLeap(jy){
     if(typeof jalaali === 'undefined' ||
        typeof jalaali.isLeapJalaaliYear !== 'function'){
@@ -547,13 +540,11 @@ textarea.field{min-height:110px;resize:vertical}
     }
     return jalaali.isLeapJalaaliYear(jy);
   }
-
   function daysInPersianMonth(jy, month){
     if(month <= 6) return 31;
     if(month <= 11) return 30;
     return isJalaliLeap(jy) ? 30 : 29;
   }
-
   function renderJalaliGrid(){
     try {
       var fmtParts = new Intl.DateTimeFormat('en-US', { calendar:'persian', year:'numeric', month:'numeric' }).formatToParts(currentPickerDate);
@@ -572,7 +563,6 @@ textarea.field{min-height:110px;resize:vertical}
 
       var grid = $('jp-grid');
       var html = ['ش','ی','د','س','چ','پ','ج'].map(function(d){ return '<div class="jp-weekname">'+d+'</div>'; }).join('');
-      // ★ diff 4b: daysInPersianMonth(pY, pM)
       var total = daysInPersianMonth(pY, pM);
       for(var i=1; i<=total; i++){
         var mStr = String(pM).padStart(2,'0'), dStr = String(i).padStart(2,'0');
@@ -675,7 +665,6 @@ textarea.field{min-height:110px;resize:vertical}
     });
   }
 
-  // ★ diff 5: save با parseCost + validateItem
   async function save(){
     if(rec){ toast('اول ضبط صدا را متوقف کنید'); return; }
     var name = $('f-name').value.trim();
@@ -710,7 +699,6 @@ textarea.field{min-height:110px;resize:vertical}
   }
 
   /* ---------- voice recording ---------- */
-  // ★ diff 6: recStarting در scope بیرونی + recorderErrorMessage
   var rec = null, recStream = null, recChunks = [], recTimer = null, recSeconds = 0;
   var recStarting = false;
 
@@ -735,7 +723,6 @@ textarea.field{min-height:110px;resize:vertical}
     return 'دسترسی به میکروفون داده نشد. «ضبط با برنامه‌ی ضبط گوشی» را بزنید.';
   }
 
-  // ★ diff 7: startRec با try/finally + recStarting
   async function startRec(){
     if(rec || recStream || recStarting){
       toast('ضبط در جریان است');
@@ -752,7 +739,6 @@ textarea.field{min-height:110px;resize:vertical}
 
     recStarting = true;
     try {
-      // مرحله ۱: getUserMedia
       try {
         recStream = await navigator.mediaDevices.getUserMedia({audio:true});
       } catch(e) {
@@ -761,13 +747,12 @@ textarea.field{min-height:110px;resize:vertical}
         return;
       }
 
-      // مرحله ۲: MediaRecorder
       var options = {};
       try {
         if(window.MediaRecorder.isTypeSupported && MediaRecorder.isTypeSupported('audio/webm;codecs=opus')){
           options.mimeType = 'audio/webm;codecs=opus';
         }
-      } catch(e) { /* نادیده */ }
+      } catch(e) {}
 
       try {
         rec = new MediaRecorder(recStream, options);
@@ -780,26 +765,47 @@ textarea.field{min-height:110px;resize:vertical}
       }
 
       recChunks = [];
-      rec.ondataavailable = function(e){ if(e.data && e.data.size > 0) recChunks.push(e.data); };
-      rec.onstop = function(){
-        if(recChunks.length){
-          var blob = new Blob(recChunks, {type: rec.mimeType || 'audio/webm'});
-          var fr = new FileReader();
-          fr.onload = function(){
-            draft.voices = (draft.voices || []).concat([fr.result]);
-            renderVoices();
-            toast('ویس اضافه شد');
-          };
-          fr.readAsDataURL(blob);
-        }
-        if(recStream){ recStream.getTracks().forEach(function(t){ t.stop(); }); recStream = null; }
+      rec.ondataavailable = function(e){
+        if(e.data && e.data.size > 0) recChunks.push(e.data);
       };
-      rec.onerror = function(){
+      rec.onstop = function(){
+        var localRec = rec;
+        var mime = (localRec && localRec.mimeType) || 'audio/webm';
+
+        if(recStream){
+          try{ recStream.getTracks().forEach(function(t){ t.stop(); }); }catch(e){}
+          recStream = null;
+        }
+
+        if(recChunks.length){
+          var blob = new Blob(recChunks, {type: mime});
+          if(blob.size < 100){
+            toast('ویس خیلی کوتاه بود');
+          } else {
+            var fr = new FileReader();
+            fr.onload = function(){
+              draft.voices = (draft.voices || []).concat([fr.result]);
+              renderVoices();
+              toast('ویس اضافه شد');
+            };
+            fr.onerror = function(){
+              toast('خطا در خواندن ویس');
+            };
+            fr.readAsDataURL(blob);
+          }
+        } else {
+          toast('ویس ضبط نشد — دوباره امتحان کن');
+        }
+
+        recChunks = [];
+        rec = null;
+        recStarting = false;
+      };
+      rec.onerror = function(e){
         toast('خطای ضبط صدا');
         stopRec(true);
       };
 
-      // مرحله ۳: start
       try {
         rec.start(250);
         recSeconds = 0; updateRecTime();
@@ -817,17 +823,53 @@ textarea.field{min-height:110px;resize:vertical}
 
   function stopRec(cancel){
     if(recTimer){ clearInterval(recTimer); recTimer = null; }
-    if(rec){
-      try{
-        if(cancel){ recChunks = []; if(rec.state !== 'inactive') rec.stop(); }
-        else if(rec.state !== 'inactive'){ rec.stop(); }
-      }catch(e){}
-      rec = null;
-    }
-    if(recStream){ recStream.getTracks().forEach(function(t){ t.stop(); }); recStream = null; }
+
     $('rec-btn').classList.remove('on');
     $('rec-label').textContent = 'ضبط صدا';
     $('rec-time').textContent = '';
+
+    if(cancel){
+      recChunks = [];
+      if(rec){
+        try{
+          if(rec.state !== 'inactive'){
+            rec.onstop = null;
+            rec.ondataavailable = null;
+            rec.stop();
+          }
+        }catch(e){}
+        rec = null;
+      }
+      if(recStream){
+        try{ recStream.getTracks().forEach(function(t){ t.stop(); }); }catch(e){}
+        recStream = null;
+      }
+      recStarting = false;
+    } else {
+      if(rec && rec.state !== 'inactive'){
+        try{
+          if(rec.state === 'recording' && typeof rec.requestData === 'function'){
+            try{ rec.requestData(); }catch(e){}
+          }
+          rec.stop();
+        }catch(e){
+          if(recStream){
+            try{ recStream.getTracks().forEach(function(t){ t.stop(); }); }catch(e2){}
+            recStream = null;
+          }
+          rec = null;
+          recStarting = false;
+          toast('توقف ضبط ناموفق بود');
+        }
+      } else {
+        if(recStream){
+          try{ recStream.getTracks().forEach(function(t){ t.stop(); }); }catch(e){}
+          recStream = null;
+        }
+        rec = null;
+        recStarting = false;
+      }
+    }
   }
 
   /* ---------- detail ---------- */
@@ -903,8 +945,6 @@ textarea.field{min-height:110px;resize:vertical}
       + '<div class="actions"><button class="btn" id="d-share">اشتراک‌گذاری</button><button class="btn" id="d-edit">ویرایش</button><button class="btn danger" id="d-del">حذف</button></div>';
     $('detail').hidden = false; $('detail').scrollTop = 0;
   }
-
-  // ★ diff 8: closeDetail با آزادسازی audio buffer
   function closeDetail(){
     openId = null;
     var body = $('d-body');
@@ -925,7 +965,6 @@ textarea.field{min-height:110px;resize:vertical}
     $('detail').hidden = true;
   }
 
-  /* ---------- wire up events ---------- */
   function init(){
     renderChips();
     renderList();
