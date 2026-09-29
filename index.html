@@ -10,6 +10,8 @@
 <meta name="apple-mobile-web-app-title" content="آرشیو تعمیرات">
 <title>آرشیو تعمیرات و پروژه‌ها</title>
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Vazirmatn:wght@400;500;700;800&display=swap">
+<!-- ★ diff 1: jalaali-js vendor — قبل از style -->
+<script src="vendor/jalaali.min.js"></script>
 <style>
 :root{
   box-sizing:border-box;
@@ -286,6 +288,23 @@ textarea.field{min-height:110px;resize:vertical}
   }
   function faDigits(n){ return String(n).replace(/[0-9]/g, function(d){ return '۰۱۲۳۴۵۶۷۸۹'[d]; }); }
 
+  // ★ diff 2: parseCost
+  function parseCost(raw){
+    var rawStr = String(raw == null ? '' : raw);
+    if(/[eE]/.test(rawStr)) return '';
+    var s = latin(rawStr).trim();
+    s = s.replace(/[,\s_]/g, '');
+    s = s.replace(/[^\d.]/g, '');
+    if(s === '' || s === '.') return '';
+    var dotCount = (s.match(/\./g) || []).length;
+    if(dotCount > 1) return '';
+    if(s.charAt(0) === '.' || s.charAt(s.length - 1) === '.') return '';
+    var n = Number(s);
+    if(!isFinite(n) || n < 0) return '';
+    if(n > 1e9) return '';
+    return Math.round(n * 100) / 100;
+  }
+
   function todayShamsi(){
     try {
       var d = new Date();
@@ -305,7 +324,7 @@ textarea.field{min-height:110px;resize:vertical}
     clearTimeout(toast.t); toast.t = setTimeout(function(){ t.hidden = true; }, ms || 2200);
   }
 
-  /* ---------- storage (IndexedDB, falls back to localStorage) ---------- */
+  /* ---------- storage ---------- */
   var DB_NAME = 'repair_archive_db', DB_VERSION = 1, STORE = 'items', db = null;
   function openDB(){
     return new Promise(function(resolve){
@@ -383,10 +402,45 @@ textarea.field{min-height:110px;resize:vertical}
       return true;
     }catch(e){ return false; }
   }
-  function validateItem(it){
-    return it && typeof it === 'object' && it.id && typeof it.name === 'string'
-      && ['repair','project'].indexOf(it.kind) >= 0 && ['wait','work','done'].indexOf(it.status) >= 0;
+
+  // ★ diff 3: byteLengthOfDataURL + validateItem
+  function byteLengthOfDataURL(s){
+    if(typeof s !== 'string') return 0;
+    var i = s.indexOf(',');
+    if(i < 0) return 0;
+    return Math.floor((s.length - i - 1) * 0.75);
   }
+
+  var MAX_PHOTOS = 20, MAX_VOICES = 20, MAX_DESC_LEN = 5000;
+  var MAX_RECORD_BYTES = 5 * 1024 * 1024;
+
+  function validateItem(it){
+    if(!it || typeof it !== 'object') return null;
+    if(typeof it.id !== 'string' || !it.id) return null;
+    if(typeof it.name !== 'string' || !it.name) return null;
+    if(['repair','project'].indexOf(it.kind) < 0) return null;
+    if(['wait','work','done'].indexOf(it.status) < 0) return null;
+
+    var photos = Array.isArray(it.photos) ? it.photos.slice(0, MAX_PHOTOS) : [];
+    var voices = Array.isArray(it.voices) ? it.voices.slice(0, MAX_VOICES) : [];
+    var desc = typeof it.desc === 'string' ? it.desc.slice(0, MAX_DESC_LEN) : '';
+    var cost = (typeof it.cost === 'number' && isFinite(it.cost) && it.cost >= 0)
+               ? it.cost : (it.cost === '' ? '' : '');
+    var created = (typeof it.created === 'number' && isFinite(it.created))
+                  ? it.created : Date.now();
+    var date = typeof it.date === 'string' ? it.date : '';
+
+    var totalBytes = 0;
+    photos.forEach(function(u){ totalBytes += byteLengthOfDataURL(u); });
+    voices.forEach(function(u){ totalBytes += byteLengthOfDataURL(u); });
+    if(totalBytes > MAX_RECORD_BYTES) return null;
+
+    return Object.assign({}, it, {
+      photos: photos, voices: voices, desc: desc,
+      cost: cost, created: created, date: date
+    });
+  }
+
   function downloadText(filename, text){
     var blob = new Blob([text], {type:'application/json;charset=utf-8'});
     var url = URL.createObjectURL(blob), a = document.createElement('a');
@@ -406,7 +460,8 @@ textarea.field{min-height:110px;resize:vertical}
       var obj = JSON.parse(text);
       var incoming = Array.isArray(obj) ? obj : obj.items;
       if(!Array.isArray(incoming)) throw new Error('bad-format');
-      incoming = incoming.filter(validateItem);
+      // ★ diff 3b: map + filter
+      incoming = incoming.map(validateItem).filter(Boolean);
       if(!incoming.length) throw new Error('empty');
       if(db){
         var tx = db.transaction(STORE,'readwrite'), store = tx.objectStore(STORE);
@@ -483,11 +538,22 @@ textarea.field{min-height:110px;resize:vertical}
     p.hidden = nextHidden;
     if(!p.hidden) renderJalaliGrid();
   }
-  function daysInPersianMonth(month){
+
+  // ★ diff 4: isJalaliLeap + daysInPersianMonth(jy, month)
+  function isJalaliLeap(jy){
+    if(typeof jalaali === 'undefined' ||
+       typeof jalaali.isLeapJalaaliYear !== 'function'){
+      throw new Error('jalaali-js not loaded — check vendor/jalaali.min.js');
+    }
+    return jalaali.isLeapJalaaliYear(jy);
+  }
+
+  function daysInPersianMonth(jy, month){
     if(month <= 6) return 31;
     if(month <= 11) return 30;
-    return 29; /* Esfand: 29 most years, 30 in leap years — approximate */
+    return isJalaliLeap(jy) ? 30 : 29;
   }
+
   function renderJalaliGrid(){
     try {
       var fmtParts = new Intl.DateTimeFormat('en-US', { calendar:'persian', year:'numeric', month:'numeric' }).formatToParts(currentPickerDate);
@@ -506,7 +572,8 @@ textarea.field{min-height:110px;resize:vertical}
 
       var grid = $('jp-grid');
       var html = ['ش','ی','د','س','چ','پ','ج'].map(function(d){ return '<div class="jp-weekname">'+d+'</div>'; }).join('');
-      var total = daysInPersianMonth(pM);
+      // ★ diff 4b: daysInPersianMonth(pY, pM)
+      var total = daysInPersianMonth(pY, pM);
       for(var i=1; i<=total; i++){
         var mStr = String(pM).padStart(2,'0'), dStr = String(i).padStart(2,'0');
         var fullDate = pY + '/' + mStr + '/' + dStr;
@@ -608,11 +675,12 @@ textarea.field{min-height:110px;resize:vertical}
     });
   }
 
+  // ★ diff 5: save با parseCost + validateItem
   async function save(){
     if(rec){ toast('اول ضبط صدا را متوقف کنید'); return; }
     var name = $('f-name').value.trim();
     if(!name){ toast('عنوان را بنویسید'); $('f-name').focus(); return; }
-    var costRaw = latin($('f-cost').value).replace(/[^\d.]/g,'');
+
     var record = {
       id: editing || uid(),
       created: draft.created || Date.now(),
@@ -625,9 +693,14 @@ textarea.field{min-height:110px;resize:vertical}
       desc: $('f-desc').value.trim(),
       cust: $('f-cust').value.trim(),
       phone: latin($('f-phone').value).trim(),
-      cost: costRaw === '' ? '' : Number(costRaw),
+      cost: parseCost($('f-cost').value),
       date: $('f-date').value.trim() || todayShamsi()
     };
+
+    var valid = validateItem(record);
+    if(!valid){ toast('رکورد نامعتبر'); return; }
+    record = valid;
+
     if(!(await saveItem(record))) return;
     var i = items.findIndex(function(x){ return x.id === record.id; });
     if(i >= 0) items[i] = record; else items.push(record);
@@ -637,7 +710,18 @@ textarea.field{min-height:110px;resize:vertical}
   }
 
   /* ---------- voice recording ---------- */
+  // ★ diff 6: recStarting در scope بیرونی + recorderErrorMessage
   var rec = null, recStream = null, recChunks = [], recTimer = null, recSeconds = 0;
+  var recStarting = false;
+
+  function recorderErrorMessage(e){
+    var n = e && e.name || '';
+    if(n === 'NotSupportedError') return 'فرمت ضبط در این مرورگر پشتیبانی نمی‌شود.';
+    if(n === 'InvalidStateError') return 'ضبط در وضعیت نامعتبر. صفحه را رفرش کنید.';
+    if(n === 'SecurityError') return 'دسترسی ضبط رد شد.';
+    return 'خطای ضبط صدا: ' + (n || 'ناشناخته');
+  }
+
   function updateRecTime(){
     var m = Math.floor(recSeconds/60), s = recSeconds%60;
     $('rec-time').textContent = String(m).padStart(2,'0') + ':' + String(s).padStart(2,'0');
@@ -650,16 +734,51 @@ textarea.field{min-height:110px;resize:vertical}
     if(n === 'NotReadableError') return 'میکروفون دست برنامه‌ی دیگری است.';
     return 'دسترسی به میکروفون داده نشد. «ضبط با برنامه‌ی ضبط گوشی» را بزنید.';
   }
+
+  // ★ diff 7: startRec با try/finally + recStarting
   async function startRec(){
+    if(rec || recStream || recStarting){
+      toast('ضبط در جریان است');
+      return;
+    }
+    if(draft.voices.length >= MAX_VOICES){
+      toast('حداکثر ' + MAX_VOICES + ' ویس مجاز است');
+      return;
+    }
     if(!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia || !window.MediaRecorder){
       toast('ضبط مستقیم در این مرورگر پشتیبانی نمی‌شود. «ضبط با برنامه‌ی ضبط گوشی» را بزنید.', 5000);
       return;
     }
-    try{
-      recStream = await navigator.mediaDevices.getUserMedia({audio:true});
+
+    recStarting = true;
+    try {
+      // مرحله ۱: getUserMedia
+      try {
+        recStream = await navigator.mediaDevices.getUserMedia({audio:true});
+      } catch(e) {
+        toast(micErrorMessage(e), 5000);
+        recStream = null;
+        return;
+      }
+
+      // مرحله ۲: MediaRecorder
       var options = {};
-      if(window.MediaRecorder.isTypeSupported && MediaRecorder.isTypeSupported('audio/webm;codecs=opus')) options.mimeType = 'audio/webm;codecs=opus';
-      rec = new MediaRecorder(recStream, options);
+      try {
+        if(window.MediaRecorder.isTypeSupported && MediaRecorder.isTypeSupported('audio/webm;codecs=opus')){
+          options.mimeType = 'audio/webm;codecs=opus';
+        }
+      } catch(e) { /* نادیده */ }
+
+      try {
+        rec = new MediaRecorder(recStream, options);
+      } catch(e) {
+        try{ recStream.getTracks().forEach(function(t){ t.stop(); }); }catch(_){}
+        recStream = null;
+        rec = null;
+        toast(recorderErrorMessage(e), 5000);
+        return;
+      }
+
       recChunks = [];
       rec.ondataavailable = function(e){ if(e.data && e.data.size > 0) recChunks.push(e.data); };
       rec.onstop = function(){
@@ -675,17 +794,27 @@ textarea.field{min-height:110px;resize:vertical}
         }
         if(recStream){ recStream.getTracks().forEach(function(t){ t.stop(); }); recStream = null; }
       };
-      rec.start(250);
-      recSeconds = 0; updateRecTime();
-      $('rec-btn').classList.add('on');
-      $('rec-label').textContent = 'توقف';
-      recTimer = setInterval(function(){ recSeconds++; updateRecTime(); }, 1000);
-    }catch(e){
-      toast(micErrorMessage(e), 5000);
-      if(recStream){ recStream.getTracks().forEach(function(t){ t.stop(); }); recStream = null; }
-      rec = null;
+      rec.onerror = function(){
+        toast('خطای ضبط صدا');
+        stopRec(true);
+      };
+
+      // مرحله ۳: start
+      try {
+        rec.start(250);
+        recSeconds = 0; updateRecTime();
+        $('rec-btn').classList.add('on');
+        $('rec-label').textContent = 'توقف';
+        recTimer = setInterval(function(){ recSeconds++; updateRecTime(); }, 1000);
+      } catch(e) {
+        stopRec(true);
+        toast('شروع ضبط ناموفق بود');
+      }
+    } finally {
+      recStarting = false;
     }
   }
+
   function stopRec(cancel){
     if(recTimer){ clearInterval(recTimer); recTimer = null; }
     if(rec){
@@ -727,7 +856,7 @@ textarea.field{min-height:110px;resize:vertical}
       try{
         if(files.length && navigator.canShare && navigator.canShare({files: files})) payload.files = files;
         await navigator.share(payload);
-      }catch(e){ /* user cancelled or unsupported combo — ignore */ }
+      }catch(e){}
     } else if(navigator.clipboard && navigator.clipboard.writeText){
       try{ await navigator.clipboard.writeText(text); toast('متن کپی شد'); }
       catch(e){ toast('اشتراک‌گذاری در این مرورگر پشتیبانی نمی‌شود'); }
@@ -774,7 +903,27 @@ textarea.field{min-height:110px;resize:vertical}
       + '<div class="actions"><button class="btn" id="d-share">اشتراک‌گذاری</button><button class="btn" id="d-edit">ویرایش</button><button class="btn danger" id="d-del">حذف</button></div>';
     $('detail').hidden = false; $('detail').scrollTop = 0;
   }
-  function closeDetail(){ openId = null; $('detail').hidden = true; }
+
+  // ★ diff 8: closeDetail با آزادسازی audio buffer
+  function closeDetail(){
+    openId = null;
+    var body = $('d-body');
+    if(body){
+      var audios = body.querySelectorAll('audio');
+      for(var i = 0; i < audios.length; i++){
+        try{
+          audios[i].pause();
+          audios[i].removeAttribute('src');
+          audios[i].load();
+        }catch(e){}
+      }
+      var imgs = body.querySelectorAll('img');
+      for(var j = 0; j < imgs.length; j++){
+        try{ imgs[j].removeAttribute('src'); }catch(e){}
+      }
+    }
+    $('detail').hidden = true;
+  }
 
   /* ---------- wire up events ---------- */
   function init(){
