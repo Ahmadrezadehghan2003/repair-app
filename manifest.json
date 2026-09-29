@@ -4,10 +4,10 @@
   "description": "برنامه آرشیو و مدیریت تعمیرات",
   "start_url": "./index.html",
   "scope": "./",
-  "display": "standalone",
+  "display": "standalone", 
   "background_color": "#ffffff",
   "theme_color": "#0f5b4a",
-  "dir": "ltr",
+  "dir": "rtl",
   "orientation": "any",
   "icons": [
     {
