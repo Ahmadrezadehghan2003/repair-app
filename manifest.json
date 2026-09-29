@@ -7,5 +7,12 @@
   "scope": "/",
   "short_name": "ارشیت.github",
   "start_url": "/",
-  "theme_color": "#0f5b4a"
+  "theme_color": "#0f5b4a",
+  "icons": [
+    {
+      "src": "icon.png",
+      "sizes": "512x512",
+      "type": "image/png"
+    }
+  ]
 }
