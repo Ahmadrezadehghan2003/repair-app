@@ -1,9 +1,6 @@
 <!DOCTYPE html>
 <html lang="fa" dir="rtl">
 <head>
-<meta name="mobile-web-app-capable" content="yes">
-<meta name="apple-mobile-web-app-capable" content="yes">
-<link rel="manifest" href="./manifest.json">
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <meta name="theme-color" content="#0f5b4a">
@@ -169,6 +166,7 @@ body{background-image:radial-gradient(circle,var(--line) 1px,transparent 1.3px);
   <input id="q" class="search" type="search" placeholder="جستجو: عنوان، دستگاه، مشتری، تلفن…" aria-label="جستجو">
   <div class="chips" id="chips" role="group" aria-label="فیلتر وضعیت"></div>
 </header>
+<div style="max-width:720px;margin:10px auto 0;padding:0 14px" id="share-all-wrap"><button type="button" class="btn" id="share-all" style="width:100%">اشتراک‌گذاری کل لیست</button></div>
 
 <main>
   <div id="warn"></div>
@@ -448,7 +446,7 @@ body{background-image:radial-gradient(circle,var(--line) 1px,transparent 1.3px);
     if(it.photos && it.photos.length){
       h += '<div class="photos">' + it.photos.map(function(p, i){ return '<div class="ph"><img alt="عکس '+(i+1)+'" src="'+p+'" data-zoom="'+i+'"></div>'; }).join('') + '</div>';
     }
-    h += '<div class="actions"><button class="btn" id="d-edit">ویرایش</button><button class="btn danger" id="d-del">حذف</button></div>';
+    h += '<div class="actions"><button class="btn" id="d-share">اشتراک‌گذاری</button><button class="btn" id="d-edit">ویرایش</button><button class="btn danger" id="d-del">حذف</button></div>';
     $('d-body').innerHTML = h;
     $('detail').hidden = false; $('detail').scrollTop = 0;
   }
@@ -594,6 +592,53 @@ body{background-image:radial-gradient(circle,var(--line) 1px,transparent 1.3px);
         items = items.filter(function(x){ return x.id !== id; });
         $('detail').hidden = true; openId = null; renderList(); toast('حذف شد');
       });
+    }
+  };
+  function itemText(it){
+    var lines = [it.name || 'بدون عنوان'];
+    lines.push(KIND[it.kind] + ' - ' + STATUS[it.status]);
+    if(it.device) lines.push('دستگاه: ' + it.device);
+    if(it.cust) lines.push('مشتری: ' + it.cust);
+    if(it.phone) lines.push('تلفن: ' + it.phone);
+    if(it.cost !== '' && it.cost != null) lines.push('هزینه: ' + fmtCost(it.cost));
+    if(it.date) lines.push('تاریخ: ' + fmtDate(it.date));
+    if(it.desc) lines.push('', it.desc);
+    return lines.join('\n');
+  }
+  function dataURLtoFile(du, name){
+    var m = /^data:(.*?);base64,(.*)$/.exec(du || ''); if(!m) return null;
+    var bin = atob(m[2]), arr = new Uint8Array(bin.length);
+    for(var i=0;i<bin.length;i++) arr[i] = bin.charCodeAt(i);
+    return new File([arr], name, {type: m[1]});
+  }
+  function shareItem(it){
+    var text = itemText(it);
+    var files = (it.photos || []).slice(0,4).map(function(p,i){ return dataURLtoFile(p, 'photo'+(i+1)+'.jpg'); }).filter(Boolean);
+    if(navigator.share){
+      var payload = {title: it.name || 'آرشیو تعمیرات', text: text};
+      if(files.length && navigator.canShare && navigator.canShare({files: files})) payload.files = files;
+      navigator.share(payload).catch(function(){});
+    } else if(navigator.clipboard && navigator.clipboard.writeText){
+      navigator.clipboard.writeText(text).then(function(){ toast('متن کپی شد'); }).catch(function(){ toast('اشتراک‌گذاری در این مرورگر پشتیبانی نمی‌شود'); });
+    } else {
+      toast('اشتراک‌گذاری در این مرورگر پشتیبانی نمی‌شود');
+    }
+  }
+  $('d-share').onclick = function(){
+    var it = items.find(function(x){ return x.id === openId; }); if(it) shareItem(it);
+  };
+  $('share-all').onclick = function(){
+    var shown = items.filter(matches).sort(function(a,b){ return (b.date||'').localeCompare(a.date||'') || b.created - a.created; });
+    if(!shown.length){ toast('موردی برای اشتراک‌گذاری نیست'); return; }
+    var text = 'آرشیو تعمیرات و پروژه‌ها\n\n' + shown.map(function(it,i){
+      return (i+1) + '. ' + (it.name || 'بدون عنوان') + ' - ' + STATUS[it.status] + (it.cust ? ' - ' + it.cust : '');
+    }).join('\n');
+    if(navigator.share){
+      navigator.share({title:'آرشیو تعمیرات', text: text}).catch(function(){});
+    } else if(navigator.clipboard && navigator.clipboard.writeText){
+      navigator.clipboard.writeText(text).then(function(){ toast('لیست کپی شد'); }).catch(function(){ toast('اشتراک‌گذاری در این مرورگر پشتیبانی نمی‌شود'); });
+    } else {
+      toast('اشتراک‌گذاری در این مرورگر پشتیبانی نمی‌شود');
     }
   };
   function zoom(src){ $('lb-img').src = src; $('lb').hidden = false; }
