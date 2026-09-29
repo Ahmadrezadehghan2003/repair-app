@@ -1,7 +1,6 @@
 <!DOCTYPE html>
 <html lang="fa" dir="rtl">
 <head>
-<link rel="manifest" href="./manifest.json">
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <meta name="theme-color" content="#0f5b4a">
@@ -9,7 +8,6 @@
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
 <meta name="apple-mobile-web-app-title" content="آرشیو تعمیرات">
-
 <title>آرشیو تعمیرات و پروژه‌ها</title>
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Vazirmatn:wght@400;500;700;800&display=swap">
 <style>
@@ -40,37 +38,56 @@
 html{scroll-padding-top:env(safe-area-inset-top,0px)}
 html,body{margin:0}
 body{background:var(--bg);color:var(--ink);font-family:"Vazirmatn",Tahoma,"Segoe UI",sans-serif;font-size:16px;line-height:1.7;min-height:100vh;-webkit-tap-highlight-color:transparent}
+body{background-image:radial-gradient(circle,var(--line) 1px,transparent 1.3px);background-size:20px 20px}
 button,input,select,textarea{font:inherit;color:inherit}
 :focus-visible{outline:3px solid var(--silk);outline-offset:2px}
 
-header.top{background:var(--board);color:var(--board-ink);padding:14px 16px 16px;position:sticky;top:env(safe-area-inset-top,0px);z-index:5}
-.top h1{margin:0 0 10px;font-size:20px;font-weight:800;display:flex;align-items:center;gap:10px}
-.top h1 svg{flex:none}
+header.top{background:var(--board);color:var(--board-ink);padding:14px 16px 16px;position:sticky;top:env(safe-area-inset-top,0px);z-index:5;box-shadow:0 8px 24px -12px rgba(0,0,0,.5);
+  background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='150' height='150' viewBox='0 0 150 150' fill='none' stroke='white' stroke-opacity='.11' stroke-width='2' stroke-linecap='round'%3E%3Cpath d='M0 34h42l16 16h34M92 50l16-16h42M0 108h28l22-22h38M88 86l22 22h40M75 0v34M75 150v-34'/%3E%3Ccircle cx='58' cy='50' r='4.5' fill='white' fill-opacity='.11'/%3E%3Ccircle cx='92' cy='50' r='4.5' fill='white' fill-opacity='.11'/%3E%3Ccircle cx='50' cy='86' r='4.5' fill='white' fill-opacity='.11'/%3E%3Ccircle cx='88' cy='86' r='4.5' fill='white' fill-opacity='.11'/%3E%3C/svg%3E");background-size:150px 150px}
+.top h1{margin:0 0 10px;font-size:21px;font-weight:800;display:flex;align-items:center;gap:10px}
+.top h1 svg{flex:none;width:36px;height:36px;padding:6px;border-radius:11px;background:var(--silk);color:var(--silk-ink)}
 .search{width:100%;border:0;border-radius:10px;padding:10px 14px;background:rgba(255,255,255,.95);color:#15211d;font-size:15px}
 .chips{display:flex;gap:8px;margin-top:10px;overflow-x:auto;padding-bottom:2px}
 .chip{flex:none;border:1.5px solid rgba(255,255,255,.55);background:transparent;color:var(--board-ink);border-radius:999px;padding:4px 14px;font-size:14px;cursor:pointer}
 .chip[aria-pressed="true"]{background:var(--silk);border-color:var(--silk);color:var(--silk-ink);font-weight:700}
 
+.toolbar{max-width:720px;margin:10px auto 0;padding:0 14px;display:grid;grid-template-columns:1fr 1fr 1fr 44px;gap:7px}
+.toolbar .btn{padding:8px 6px;font-size:12.5px;min-width:0;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.toolbar .icon-btn{padding:8px 0;font-size:17px}
+input#import-file{display:none}
+
 main{padding:14px 14px 110px;max-width:720px;margin:0 auto}
-.toolbar{max-width:720px;margin:10px auto 0;padding:0 14px;display:grid;grid-template-columns:1fr 1fr 1fr auto;gap:7px}
-.toolbar .btn{padding:7px 8px;font-size:13px;min-width:0}
+.stats{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin:0 0 14px}
+.st-wait{--led:#f5a623}.st-work{--led:#3b9cff}.st-done{--led:#2fd27a}
+.stat{position:relative;border:1.5px solid var(--line);background:var(--surface);border-radius:14px;padding:10px 12px;text-align:right;cursor:pointer;display:flex;flex-direction:column;overflow:hidden}
+.stat b{font-size:26px;font-weight:800;line-height:1.25}
+.stat span{font-size:13px;color:var(--muted)}
+.stat .led{position:absolute;top:12px;left:12px;width:10px;height:10px;border-radius:50%;background:var(--led);box-shadow:0 0 0 3px rgba(128,128,128,.18),0 0 10px var(--led)}
+.stat[aria-pressed="true"]{border-color:var(--led);box-shadow:inset 0 0 0 1px var(--led)}
+
 .count{color:var(--muted);font-size:14px;margin:2px 4px 10px}
 .list{display:flex;flex-direction:column;gap:10px}
-.item{display:flex;gap:12px;background:var(--surface);border:1px solid var(--line);border-radius:12px;padding:10px;text-align:right;width:100%;cursor:pointer;align-items:stretch}
-.thumb{flex:none;width:76px;height:76px;border-radius:8px;background:var(--bg);border:1px dashed var(--line);display:flex;align-items:center;justify-content:center;overflow:hidden;color:var(--muted)}
+.item{display:flex;gap:12px;background:var(--surface);border:1px solid var(--line);border-inline-start:6px solid var(--led,var(--line));box-shadow:0 8px 18px -12px rgba(15,91,74,.55);border-radius:14px;padding:10px 12px 10px 10px;text-align:right;width:100%;cursor:pointer;align-items:stretch}
+.thumb{flex:none;width:76px;height:76px;border-radius:8px;background:var(--bg);border:1px solid var(--line);display:flex;align-items:center;justify-content:center;overflow:hidden;color:var(--muted)}
+.thumb.noimg{background:linear-gradient(140deg,var(--board),#0a3d32);border-color:transparent;color:var(--silk)}
 .thumb img{width:100%;height:100%;object-fit:cover;display:block}
 .info{flex:1;min-width:0;display:flex;flex-direction:column;gap:2px}
 .info b{font-size:16px;font-weight:700;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 .info span{color:var(--muted);font-size:13.5px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 .row{display:flex;align-items:center;gap:8px;margin-top:auto;flex-wrap:wrap}
-.badge{font-size:12.5px;font-weight:700;padding:1px 10px;border-radius:999px}
+.badge{font-size:12.5px;font-weight:700;padding:1px 10px;border-radius:999px;display:inline-flex;align-items:center;gap:6px}
+.badge::before{content:"";width:8px;height:8px;border-radius:50%;background:currentColor;box-shadow:0 0 7px currentColor}
 .s-wait{background:var(--wait-bg);color:var(--wait)}
 .s-work{background:var(--work-bg);color:var(--work)}
 .s-done{background:var(--done-bg);color:var(--done)}
-.kind{font-size:12.5px;color:var(--muted)}
+.kind{font-size:12.5px;color:var(--muted);display:inline-flex;align-items:center;gap:4px}
+.kind svg{flex:none}
 
 .empty{text-align:center;padding:48px 20px;color:var(--muted)}
-.fab{position:fixed;left:18px;bottom:calc(18px + env(safe-area-inset-bottom,0px));width:60px;height:60px;border-radius:18px;border:0;background:var(--silk);color:var(--silk-ink);font-size:34px;font-weight:700;line-height:1;cursor:pointer;box-shadow:0 4px 14px rgba(0,0,0,.28);z-index:6;display:flex;align-items:center;justify-content:center}
+.empty b{color:var(--ink);font-size:18px}
+
+.fab{position:fixed;left:18px;bottom:calc(18px + env(safe-area-inset-bottom,0px));width:64px;height:64px;border-radius:50%;border:0;background:linear-gradient(145deg,#f6d04f,#dfa50c);color:var(--silk-ink);font-size:34px;font-weight:700;line-height:1;cursor:pointer;box-shadow:0 0 0 6px rgba(233,184,36,.25),0 10px 22px rgba(0,0,0,.35);z-index:6;display:flex;align-items:center;justify-content:center}
+.fab:active{transform:scale(.95)}
 
 .sheet{position:fixed;inset:0;background:var(--bg);z-index:20;overflow-y:auto;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}
 .sheet[hidden]{display:none}
@@ -81,18 +98,23 @@ main{padding:14px 14px 110px;max-width:720px;margin:0 auto}
 .ibtn.primary{background:var(--silk);color:var(--silk-ink);font-weight:800}
 .sheet-body{padding:16px 16px 60px;max-width:720px;margin:0 auto}
 
-label{display:block;font-weight:700;font-size:14.5px;margin:14px 0 4px}
+label{display:flex;align-items:center;gap:8px;font-weight:700;font-size:14.5px;margin:14px 0 4px}
+label::before{content:"";width:4px;height:16px;border-radius:2px;background:var(--silk);flex:none}
 .field{width:100%;border:1.5px solid var(--line);background:var(--surface);border-radius:10px;padding:9px 12px}
+.field:focus{border-color:var(--board);box-shadow:0 0 0 3px rgba(15,91,74,.18);outline:none}
 textarea.field{min-height:110px;resize:vertical}
 .two{display:grid;grid-template-columns:1fr 1fr;gap:12px}
 .seg{display:flex;gap:8px;flex-wrap:wrap}
 .seg button{flex:1;min-width:88px;border:1.5px solid var(--line);background:var(--surface);border-radius:10px;padding:8px 10px;cursor:pointer}
 .seg button[aria-pressed="true"]{border-color:var(--board);background:var(--board);color:var(--board-ink);font-weight:700}
+
 .photos{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin-top:6px}
 .ph{position:relative;aspect-ratio:1;border-radius:10px;overflow:hidden;border:1px solid var(--line);background:var(--surface)}
 .ph img{width:100%;height:100%;object-fit:cover;display:block;cursor:zoom-in}
 .ph .x{position:absolute;top:4px;left:4px;width:28px;height:28px;border-radius:50%;border:0;background:rgba(0,0,0,.65);color:#fff;font-size:16px;line-height:1;cursor:pointer}
 .add-ph{aspect-ratio:1;border:2px dashed var(--board);border-radius:10px;background:transparent;color:var(--board);cursor:pointer;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:2px;font-size:13.5px}
+:root[data-theme="dark"] .add-ph{color:var(--silk);border-color:var(--silk)}
+@media (prefers-color-scheme: dark){:root:not([data-theme="light"]) .add-ph{color:var(--silk);border-color:var(--silk)}}
 
 .rec{display:flex;align-items:center;gap:10px;flex-wrap:wrap;margin-top:6px}
 .rec-btn{display:inline-flex;align-items:center;gap:8px;border:1.5px solid var(--danger);color:var(--danger);background:var(--surface);border-radius:999px;padding:8px 18px;cursor:pointer;font-weight:700}
@@ -106,13 +128,30 @@ textarea.field{min-height:110px;resize:vertical}
 .vc{display:flex;align-items:center;gap:8px;background:var(--surface);border:1px solid var(--line);border-radius:12px;padding:6px 8px}
 .vc audio{flex:1;min-width:0;height:36px}
 .vc .x{flex:none;width:30px;height:30px;border-radius:50%;border:0;background:var(--line);color:var(--ink);cursor:pointer}
-.d-title{font-size:22px;font-weight:800;margin:0 0 6px}
-.meta{display:grid;grid-template-columns:auto 1fr;gap:6px 14px;background:var(--surface);border:1px solid var(--line);border-radius:12px;padding:12px 14px;margin:12px 0}
+
+.date-wrap{position:relative;display:flex;align-items:center}
+.date-wrap input{padding-left:40px}
+.calendar-trigger{position:absolute;left:8px;background:none;border:none;cursor:pointer;font-size:20px;padding:4px;line-height:1}
+.jalali-picker{position:absolute;top:100%;right:0;left:0;background:var(--surface);border:1.5px solid var(--board);border-radius:12px;box-shadow:0 10px 25px rgba(0,0,0,.2);z-index:100;padding:12px;margin-top:4px}
+.jalali-picker[hidden]{display:none}
+.jp-header{display:flex;justify-content:space-between;align-items:center;font-weight:700;margin-bottom:10px}
+.jp-header button{background:var(--board);color:#fff;border:none;border-radius:6px;padding:4px 12px;cursor:pointer;font-size:14px}
+.jp-grid{display:grid;grid-template-columns:repeat(7,1fr);gap:4px;text-align:center}
+.jp-cell{padding:8px 0;font-size:13.5px;cursor:pointer;border-radius:6px;background:var(--bg)}
+.jp-cell:hover{background:var(--board);color:#fff}
+.jp-cell.selected{background:var(--silk);color:var(--silk-ink);font-weight:700}
+.jp-cell.today{box-shadow:inset 0 0 0 2px var(--silk)}
+.jp-weekname{font-size:12px;color:var(--muted);font-weight:700;padding-bottom:4px}
+
+.d-title{font-size:22px;font-weight:800;margin:0 0 8px}
+.hero{border-radius:16px;overflow:hidden;margin-bottom:14px;aspect-ratio:16/10;background:var(--board);box-shadow:0 10px 24px -14px rgba(0,0,0,.6)}
+.hero img{width:100%;height:100%;object-fit:cover;display:block;cursor:zoom-in}
+.meta{display:grid;grid-template-columns:auto 1fr;gap:6px 14px;background:var(--surface);border:1px solid var(--line);border-inline-start:6px solid var(--silk);border-radius:12px;padding:12px 14px;margin:12px 0}
 .meta dt{color:var(--muted);font-size:14px}
 .meta dd{margin:0;font-weight:500;overflow-wrap:anywhere}
 .notes{white-space:pre-wrap;background:var(--surface);border:1px solid var(--line);border-radius:12px;padding:12px 14px;margin:0 0 12px}
-.actions{display:flex;gap:10px;margin-top:18px}
-.btn{flex:1;border:1.5px solid var(--line);background:var(--surface);border-radius:10px;padding:10px;cursor:pointer;font-weight:700}
+.actions{display:flex;gap:10px;margin-top:18px;flex-wrap:wrap}
+.btn{flex:1;min-width:90px;border:1.5px solid var(--line);background:var(--surface);border-radius:10px;padding:10px;cursor:pointer;font-weight:700}
 .btn.danger{color:var(--danger);border-color:var(--danger)}
 .btn.danger.armed{background:var(--danger);color:#fff}
 
@@ -121,125 +160,30 @@ textarea.field{min-height:110px;resize:vertical}
 .lightbox img{max-width:100%;max-height:100%;object-fit:contain}
 .toast{position:fixed;right:50%;transform:translateX(50%);width:max-content;max-width:calc(100% - 32px);text-align:center;bottom:calc(90px + env(safe-area-inset-bottom,0px));background:var(--ink);color:var(--bg);padding:8px 18px;border-radius:16px;z-index:50;font-size:14.5px}
 .toast[hidden]{display:none}
-
-/* استایل کانتینر فیلد تاریخ و تقویم */
-.date-wrap {
-  position: relative;
-  display: flex;
-  align-items: center;
-}
-.date-wrap input {
-  padding-left: 40px;
-}
-.calendar-trigger {
-  position: absolute;
-  left: 8px;
-  background: none;
-  border: none;
-  cursor: pointer;
-  font-size: 20px;
-  padding: 4px;
-}
-
-/* پنل انتخاب‌گر تقویم شمسی سفارشی */
-.jalali-picker {
-  position: absolute;
-  top: 100%;
-  right: 0;
-  width: 100%;
-  background: var(--surface);
-  border: 1.5px solid var(--board);
-  border-radius: 12px;
-  box-shadow: 0 10px 25px rgba(0,0,0,0.2);
-  z-index: 100;
-  padding: 12px;
-  margin-top: 4px;
-}
-.jalali-picker[hidden] { display: none; }
-.jp-header {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  font-weight: bold;
-  margin-bottom: 10px;
-}
-.jp-header button {
-  background: var(--board);
-  color: #fff;
-  border: none;
-  border-radius: 6px;
-  padding: 4px 10px;
-  cursor: pointer;
-}
-.jp-grid {
-  display: grid;
-  grid-template-columns: repeat(7, 1fr);
-  gap: 4px;
-  text-align: center;
-}
-.jp-cell {
-  padding: 8px 0;
-  font-size: 13.5px;
-  cursor: pointer;
-  border-radius: 6px;
-  background: var(--bg);
-}
-.jp-cell:hover {
-  background: var(--board);
-  color: #fff;
-}
-.jp-cell.selected {
-  background: var(--silk);
-  color: var(--silk-ink);
-  font-weight: bold;
-}
-.jp-weekname {
-  font-size: 12px;
-  color: var(--muted);
-  font-weight: bold;
-  padding-bottom: 4px;
-}
-
-body{background-image:radial-gradient(circle,var(--line) 1px,transparent 1.3px);background-size:20px 20px}
-.top,.sheet-bar{background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='150' height='150' viewBox='0 0 150 150' fill='none' stroke='white' stroke-opacity='.11' stroke-width='2' stroke-linecap='round'%3E%3Cpath d='M0 34h42l16 16h34M92 50l16-16h42M0 108h28l22-22h38M88 86l22 22h40M75 0v34M75 150v-34'/%3E%3Ccircle cx='58' cy='50' r='4.5' fill='white' fill-opacity='.11'/%3E%3Ccircle cx='92' cy='50' r='4.5' fill='white' fill-opacity='.11'/%3E%3Ccircle cx='50' cy='86' r='4.5' fill='white' fill-opacity='.11'/%3E%3Ccircle cx='88' cy='86' r='4.5' fill='white' fill-opacity='.11'/%3E%3C/svg%3E");background-size:150px 150px}
-.top{box-shadow:0 8px 24px -12px rgba(0,0,0,.5)}
-.top h1 svg{width:36px;height:36px;padding:6px;border-radius:11px;background:var(--silk);color:var(--silk-ink)}
-.st-wait{--led:#f5a623}.st-work{--led:#3b9cff}.st-done{--led:#2fd27a}
-.stats{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin:0 0 14px}
-.stat{position:relative;border:1.5px solid var(--line);background:var(--surface);border-radius:14px;padding:10px 12px;text-align:right;cursor:pointer;display:flex;flex-direction:column;overflow:hidden}
-.stat b{font-size:26px;font-weight:800;line-height:1.25}
-.stat span{font-size:13px;color:var(--muted)}
-.stat .led{position:absolute;top:12px;left:12px;width:10px;height:10px;border-radius:50%;background:var(--led);box-shadow:0 0 0 3px rgba(128,128,128,.18),0 0 10px var(--led)}
-.item{border-inline-start:6px solid var(--led);box-shadow:0 8px 18px -12px rgba(15,91,74,.55);border-radius:14px;padding:10px 12px 10px 10px}
-.thumb.noimg{background:linear-gradient(140deg,var(--board),#0a3d32);border-color:transparent;color:var(--silk)}
-.badge{display:inline-flex;align-items:center;gap:6px}
-.badge::before{content:"";width:8px;height:8px;border-radius:50%;background:currentColor;box-shadow:0 0 7px currentColor}
-.kind{display:inline-flex;align-items:center;gap:4px}
-.fab{background:linear-gradient(145deg,#f6d04f,#dfa50c);box-shadow:0 0 0 6px rgba(233,184,36,.25),0 10px 22px rgba(0,0,0,.35);width:64px;height:64px;border-radius:50%}
-.hero{border-radius:16px;overflow:hidden;margin-bottom:14px;aspect-ratio:16/10;background:var(--board);box-shadow:0 10px 24px -14px rgba(0,0,0,.6)}
-.hero img{width:100%;height:100%;object-fit:cover;display:block;cursor:zoom-in}
+@media (prefers-reduced-motion:reduce){*{transition:none!important;animation:none!important}}
 </style>
 </head>
 <body>
 
 <header class="top">
   <h1>
-    <svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="6" y="6" width="12" height="12" rx="1.5"/><path d="M9 3v3M12 3v3M15 3v3M9 18v3M12 18v3M15 18v3M3 9h3M3 12h3M3 15h3M18 9h3M18 12h3M18 15h3"/></svg>
+    <svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="6" y="6" width="12" height="12" rx="1.5"/><path d="M9 3v3M12 3v3M15 3v3M9 18v3M12 18v3M15 18v3M3 9h3M3 12h3M3 15h3M18 9h3M18 12h3M18 15h3"/></svg>
     آرشیو تعمیرات و پروژه‌ها
   </h1>
   <input id="q" class="search" type="search" placeholder="جستجو: عنوان، دستگاه، مشتری، تلفن…" aria-label="جستجو">
   <div class="chips" id="chips" role="group" aria-label="فیلتر وضعیت"></div>
 </header>
 
-<div class="toolbar" id="tools-wrap">
-  <button type="button" class="btn" id="share-all">اشتراک‌گذاری لیست</button>
-  <button type="button" class="btn" id="export-data">پشتیبان‌گیری</button>
+<div class="toolbar">
+  <button type="button" class="btn" id="share-all">اشتراک لیست</button>
+  <button type="button" class="btn" id="export-data">پشتیبان</button>
   <button type="button" class="btn" id="import-data">بازیابی</button>
-  <button type="button" class="btn" id="theme-toggle" aria-label="تغییر حالت نمایش">🌙</button>
+  <button type="button" class="btn icon-btn" id="theme-toggle" aria-label="تغییر حالت نمایش">🌙</button>
 </div>
 <input id="import-file" type="file" accept="application/json,.json" hidden>
 
 <main>
+  <div id="warn"></div>
   <div class="stats" id="stats"></div>
   <div class="count" id="count"></div>
   <div class="list" id="list"></div>
@@ -272,7 +216,11 @@ body{background-image:radial-gradient(circle,var(--line) 1px,transparent 1.3px);
     <input id="f-cam" type="file" accept="image/*" capture="environment" hidden>
 
     <label>یادداشت صوتی</label>
-    <div class="rec"><button type="button" class="rec-btn" id="rec-btn"><span class="dot"></span><span id="rec-label">ضبط صدا</span></button><button type="button" class="ibtn alt" id="rec-app">ضبط با برنامه‌ی ضبط گوشی</button><span class="rec-time" id="rec-time"></span></div>
+    <div class="rec">
+      <button type="button" class="rec-btn" id="rec-btn"><span class="dot"></span><span id="rec-label">ضبط صدا</span></button>
+      <button type="button" class="ibtn alt" id="rec-app">ضبط با برنامه‌ی ضبط گوشی</button>
+      <span class="rec-time" id="rec-time"></span>
+    </div>
     <input id="f-aud" type="file" accept="audio/*" capture hidden>
     <div class="voices" id="f-voices"></div>
 
@@ -285,13 +233,12 @@ body{background-image:radial-gradient(circle,var(--line) 1px,transparent 1.3px);
       <div>
         <label for="f-date">تاریخ (شمسی)</label>
         <div class="date-wrap">
-          <input id="f-date" class="field" placeholder="1405/07/07" dir="ltr" style="text-align:right">
-          <button type="button" class="calendar-trigger" id="cal-btn" title="انتخاب از تقویم">📅</button>
-          <!-- کانتینر تقویم شمسی تعاملی -->
+          <input id="f-date" class="field" placeholder="1405/07/07" dir="ltr" style="text-align:right" autocomplete="off">
+          <button type="button" class="calendar-trigger" id="cal-btn" title="انتخاب از تقویم" aria-label="باز کردن تقویم">📅</button>
           <div class="jalali-picker" id="jalali-picker" hidden>
             <div class="jp-header">
               <button type="button" id="jp-prev">◄</button>
-              <span id="jp-month-year">فروردین ۱۴۰۵</span>
+              <span id="jp-month-year">—</span>
               <button type="button" id="jp-next">►</button>
             </div>
             <div class="jp-grid" id="jp-grid"></div>
@@ -318,9 +265,15 @@ body{background-image:radial-gradient(circle,var(--line) 1px,transparent 1.3px);
 
 <script>
 (function(){
+  "use strict";
   var STATUS = {wait:'در انتظار', work:'در حال انجام', done:'تمام‌شده'};
   var KIND = {repair:'تعمیر', project:'پروژه'};
-  var items = [];
+  var ICO = {
+    repair:'<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14.7 6.3a4 4 0 0 0-5.4 5.1L3 17.7 6.3 21l6.3-6.3a4 4 0 0 0 5.1-5.4l-2.6 2.6-2.4-.6-.6-2.4z"/></svg>',
+    project:'<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="7" y="7" width="10" height="10" rx="1.5"/><path d="M10 3v4M14 3v4M10 17v4M14 17v4M3 10h4M3 14h4M17 10h4M17 14h4"/></svg>'
+  };
+
+  var items = [], memoryOnly = false;
   var filter = 'all', query = '';
   var editing = null, draft = null, openId = null;
 
@@ -331,20 +284,18 @@ body{background-image:radial-gradient(circle,var(--line) 1px,transparent 1.3px);
     return String(s||'').replace(/[۰-۹]/g, function(d){ return '۰۱۲۳۴۵۶۷۸۹'.indexOf(d); })
                         .replace(/[٠-٩]/g, function(d){ return '٠١٢٣٤٥٦٧٨٩'.indexOf(d); });
   }
-  
+  function faDigits(n){ return String(n).replace(/[0-9]/g, function(d){ return '۰۱۲۳۴۵۶۷۸۹'[d]; }); }
+
   function todayShamsi(){
     try {
       var d = new Date();
-      var parts = new Intl.DateTimeFormat('fa-IR', { calendar: 'persian', year: 'numeric', month: '2-digit', day: '2-digit' }).formatToParts(d);
-      var y = parts.find(p => p.type === 'year').value;
-      var m = parts.find(p => p.type === 'month').value;
-      var day = parts.find(p => p.type === 'day').value;
-      return latin(y) + '/' + latin(m) + '/' + latin(day);
+      var parts = new Intl.DateTimeFormat('en-US', { calendar: 'persian', year: 'numeric', month: '2-digit', day: '2-digit' }).formatToParts(d);
+      var get = function(t){ var p = parts.filter(function(x){ return x.type === t; })[0]; return p ? p.value : ''; };
+      return get('year') + '/' + get('month') + '/' + get('day');
     } catch(e){
       return '1405/01/01';
     }
   }
-
   function fmtCost(n){
     if(n === '' || n == null || isNaN(n)) return '';
     return Number(n).toLocaleString('fa-IR') + ' تومان';
@@ -354,93 +305,129 @@ body{background-image:radial-gradient(circle,var(--line) 1px,transparent 1.3px);
     clearTimeout(toast.t); toast.t = setTimeout(function(){ t.hidden = true; }, ms || 2200);
   }
 
+  /* ---------- storage (IndexedDB, falls back to localStorage) ---------- */
   var DB_NAME = 'repair_archive_db', DB_VERSION = 1, STORE = 'items', db = null;
   function openDB(){
     return new Promise(function(resolve){
       if(!window.indexedDB){ resolve(null); return; }
       var req;
-      try{ req=indexedDB.open(DB_NAME, DB_VERSION); }catch(e){ resolve(null); return; }
-      req.onupgradeneeded=function(e){
-        var d=e.target.result;
-        if(!d.objectStoreNames.contains(STORE)) d.createObjectStore(STORE,{keyPath:'id'});
+      try{ req = indexedDB.open(DB_NAME, DB_VERSION); }catch(e){ resolve(null); return; }
+      req.onupgradeneeded = function(e){
+        var d = e.target.result;
+        if(!d.objectStoreNames.contains(STORE)) d.createObjectStore(STORE, {keyPath:'id'});
       };
-      req.onsuccess=function(){ db=req.result; resolve(db); };
-      req.onerror=function(){ resolve(null); };
+      req.onsuccess = function(){ resolve(req.result); };
+      req.onerror = function(){ resolve(null); };
     });
   }
   function idbAll(){
     return new Promise(function(resolve){
-      if(!db){resolve([]);return;}
-      var tx=db.transaction(STORE,'readonly'), req=tx.objectStore(STORE).getAll();
-      req.onsuccess=function(){resolve(req.result||[])}; req.onerror=function(){resolve([])};
+      if(!db){ resolve([]); return; }
+      var tx = db.transaction(STORE,'readonly'), req = tx.objectStore(STORE).getAll();
+      req.onsuccess = function(){ resolve(req.result || []); };
+      req.onerror = function(){ resolve([]); };
     });
   }
   function idbPut(item){
     return new Promise(function(resolve,reject){
-      if(!db){reject(new Error('no-db'));return;}
-      var tx=db.transaction(STORE,'readwrite'); tx.objectStore(STORE).put(item);
-      tx.oncomplete=function(){resolve(true)}; tx.onerror=function(){reject(tx.error)};
+      if(!db){ reject(new Error('no-db')); return; }
+      var tx = db.transaction(STORE,'readwrite');
+      tx.objectStore(STORE).put(item);
+      tx.oncomplete = function(){ resolve(true); };
+      tx.onerror = function(){ reject(tx.error); };
     });
   }
   function idbDelete(id){
     return new Promise(function(resolve,reject){
-      if(!db){reject(new Error('no-db'));return;}
-      var tx=db.transaction(STORE,'readwrite'); tx.objectStore(STORE).delete(id);
-      tx.oncomplete=function(){resolve(true)}; tx.onerror=function(){reject(tx.error)};
+      if(!db){ reject(new Error('no-db')); return; }
+      var tx = db.transaction(STORE,'readwrite');
+      tx.objectStore(STORE).delete(id);
+      tx.oncomplete = function(){ resolve(true); };
+      tx.onerror = function(){ reject(tx.error); };
     });
   }
+  function lsLoad(){
+    try{ var data = localStorage.getItem('repair_archive_items'); return data ? JSON.parse(data) : []; }
+    catch(e){ return []; }
+  }
+  function lsSave(list){
+    try{ localStorage.setItem('repair_archive_items', JSON.stringify(list)); return true; }
+    catch(e){ return false; }
+  }
   async function initStorage(){
-    await openDB();
-    if(db){ items = await idbAll(); }
-    else {
-      try{ var data=localStorage.getItem('repair_archive_items'); items = data?JSON.parse(data):[]; }catch(e){ items=[]; }
+    db = await openDB();
+    if(db){
+      items = await idbAll();
+    } else {
+      memoryOnly = false;
+      items = lsLoad();
+      $('warn').innerHTML = '<div class="badge s-wait" style="display:block;padding:8px 12px;margin-bottom:10px">ذخیره‌سازی پیشرفته در دسترس نیست؛ از حافظه‌ی ساده‌تر مرورگر استفاده می‌شود.</div>';
     }
   }
   async function saveItem(item){
     try{
       if(db){ await idbPut(item); return true; }
-      items=items.filter(function(x){return x.id!==item.id}).concat([item]);
-      localStorage.setItem('repair_archive_items',JSON.stringify(items)); return true;
-    }catch(e){ toast('ذخیره انجام نشد.',5000); return false; }
+      var list = items.filter(function(x){ return x.id !== item.id; }).concat([item]);
+      if(!lsSave(list)) throw new Error('quota');
+      return true;
+    }catch(e){
+      toast('ذخیره انجام نشد. حافظه‌ی گوشی پر است یا مرورگر اجازه نمی‌دهد.', 5000);
+      return false;
+    }
   }
   async function deleteItem(id){
     try{
       if(db){ await idbDelete(id); return true; }
-      items=items.filter(function(x){return x.id!==id}); localStorage.setItem('repair_archive_items',JSON.stringify(items)); return true;
-    }catch(e){return false;}
+      var list = items.filter(function(x){ return x.id !== id; });
+      lsSave(list);
+      return true;
+    }catch(e){ return false; }
   }
   function validateItem(it){
-    return it && typeof it==='object' && it.id && typeof it.name==='string' && ['repair','project'].indexOf(it.kind)>=0 && ['wait','work','done'].indexOf(it.status)>=0;
+    return it && typeof it === 'object' && it.id && typeof it.name === 'string'
+      && ['repair','project'].indexOf(it.kind) >= 0 && ['wait','work','done'].indexOf(it.status) >= 0;
   }
-  function downloadText(filename,text){
-    var blob=new Blob([text],{type:'application/json;charset=utf-8'}), url=URL.createObjectURL(blob), a=document.createElement('a');
-    a.href=url; a.download=filename; document.body.appendChild(a); a.click(); a.remove(); setTimeout(function(){URL.revokeObjectURL(url)},1000);
+  function downloadText(filename, text){
+    var blob = new Blob([text], {type:'application/json;charset=utf-8'});
+    var url = URL.createObjectURL(blob), a = document.createElement('a');
+    a.href = url; a.download = filename; document.body.appendChild(a); a.click(); a.remove();
+    setTimeout(function(){ URL.revokeObjectURL(url); }, 1000);
   }
   async function exportData(){
-    var all=db?await idbAll():items.slice();
-    if(!all.length){toast('موردی برای پشتیبان‌گیری وجود ندارد');return;}
-    var payload={app:'آرشیو تعمیرات و پروژه‌ها',version:2,exportedAt:new Date().toISOString(),items:all};
-    downloadText('backup-repair-archive-'+todayShamsi().replace(/\//g,'-')+'.json',JSON.stringify(payload));
+    var all = db ? await idbAll() : items.slice();
+    if(!all.length){ toast('موردی برای پشتیبان‌گیری وجود ندارد'); return; }
+    var payload = {app:'آرشیو تعمیرات و پروژه‌ها', version:2, exportedAt:new Date().toISOString(), items:all};
+    downloadText('backup-repair-archive-' + todayShamsi().replace(/\//g,'-') + '.json', JSON.stringify(payload));
     toast('فایل پشتیبان ساخته شد');
   }
   async function importData(file){
     try{
-      var obj=JSON.parse(await file.text()), incoming=Array.isArray(obj)?obj:obj.items;
-      if(!Array.isArray(incoming)) throw new Error();
-      incoming=incoming.filter(validateItem); if(!incoming.length) throw new Error();
-      var current=db?await idbAll():items.slice(), map={}; current.forEach(function(x){map[x.id]=x});
-      incoming.forEach(function(x){map[x.id]=x});
-      var merged=Object.keys(map).map(function(k){return map[k]});
-      if(db){var tx=db.transaction(STORE,'readwrite'),store=tx.objectStore(STORE); incoming.forEach(function(x){store.put(x)}); await new Promise(function(res){tx.oncomplete=res;tx.onerror=res;});}
-      items=db?await idbAll():merged; renderList(); toast(incoming.length.toLocaleString('fa-IR')+' مورد بازیابی شد');
-    }catch(e){toast('فایل پشتیبان معتبر نیست.',5000)}
+      var text = await file.text();
+      var obj = JSON.parse(text);
+      var incoming = Array.isArray(obj) ? obj : obj.items;
+      if(!Array.isArray(incoming)) throw new Error('bad-format');
+      incoming = incoming.filter(validateItem);
+      if(!incoming.length) throw new Error('empty');
+      if(db){
+        var tx = db.transaction(STORE,'readwrite'), store = tx.objectStore(STORE);
+        incoming.forEach(function(x){ store.put(x); });
+        await new Promise(function(res){ tx.oncomplete = res; tx.onerror = res; });
+        items = await idbAll();
+      } else {
+        var map = {};
+        items.forEach(function(x){ map[x.id] = x; });
+        incoming.forEach(function(x){ map[x.id] = x; });
+        items = Object.keys(map).map(function(k){ return map[k]; });
+        lsSave(items);
+      }
+      renderList();
+      toast(incoming.length.toLocaleString('fa-IR') + ' مورد بازیابی شد');
+    }catch(e){
+      toast('فایل پشتیبان معتبر نیست.', 5000);
+    }
   }
 
-  var ICO = {
-    repair:'<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14.7 6.3a4 4 0 0 0-5.4 5.1L3 17.7 6.3 21l6.3-6.3a4 4 0 0 0 5.1-5.4l-2.6 2.6-2.4-.6-.6-2.4z"/></svg>',
-    project:'<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="7" y="7" width="10" height="10" rx="1.5"/><path d="M10 3v4M14 3v4M10 17v4M14 17v4M3 10h4M3 14h4M17 10h4M17 14h4"/></svg>'
-  };
-
+  /* ---------- list ---------- */
   function renderStats(){
     var c = {wait:0, work:0, done:0};
     items.forEach(function(it){ if(c[it.status] != null) c[it.status]++; });
@@ -460,13 +447,16 @@ body{background-image:radial-gradient(circle,var(--line) 1px,transparent 1.3px);
     var hay = latin([it.name, it.device, it.desc, it.cust, it.phone].join(' ')).toLowerCase();
     return hay.indexOf(latin(query).toLowerCase()) !== -1;
   }
+  function shownItems(){
+    return items.filter(matches).sort(function(a,b){ return (b.date||'').localeCompare(a.date||'') || b.created - a.created; });
+  }
   function renderList(){
     renderStats();
-    var shown = items.filter(matches).sort(function(a,b){ return (b.date||'').localeCompare(a.date||'') || b.created - a.created; });
+    var shown = shownItems();
     $('count').textContent = items.length ? shown.length.toLocaleString('fa-IR') + ' مورد از ' + items.length.toLocaleString('fa-IR') : '';
     if(!shown.length){
       $('list').innerHTML = items.length
-        ? '<div class="empty"><p>موردی پیدا نشد.</p></div>'
+        ? '<div class="empty"><p>موردی پیدا نشد.</p><p>عبارت جستجو یا فیلتر وضعیت را عوض کنید.</p></div>'
         : '<div class="empty"><p><b>هنوز چیزی ثبت نشده</b></p><p>با دکمه + اولین تعمیر یا پروژه را اضافه کنید.</p></div>';
       return;
     }
@@ -479,71 +469,71 @@ body{background-image:radial-gradient(circle,var(--line) 1px,transparent 1.3px);
         + (sub ? '<span>'+esc(sub)+'</span>' : '')
         + '<div class="row"><span class="badge s-'+it.status+'">'+STATUS[it.status]+'</span><span class="kind">'+ICO[it.kind]+KIND[it.kind]+'</span>'
         + (it.date ? '<span class="kind">'+esc(it.date)+'</span>' : '')
+        + ((it.voices && it.voices.length) ? '<span class="kind">🎙 '+faDigits(it.voices.length)+'</span>' : '')
         + (it.cost !== '' && it.cost != null ? '<span class="kind">'+fmtCost(it.cost)+'</span>' : '')
         + '</div></div></button>';
     }).join('');
   }
 
-  // --- سیستم تقویم شمسی داخلی ---
+  /* ---------- Jalali calendar picker ---------- */
   var currentPickerDate = new Date();
   function togglePicker(show){
     var p = $('jalali-picker');
-    if(show === undefined) p.hidden = !p.hidden;
-    else p.hidden = !show;
+    var nextHidden = (show === undefined) ? !p.hidden : !show;
+    p.hidden = nextHidden;
     if(!p.hidden) renderJalaliGrid();
   }
-
+  function daysInPersianMonth(month){
+    if(month <= 6) return 31;
+    if(month <= 11) return 30;
+    return 29; /* Esfand: 29 most years, 30 in leap years — approximate */
+  }
   function renderJalaliGrid(){
     try {
-      var formatterY = new Intl.DateTimeFormat('en-US', { calendar: 'persian', year: 'numeric' });
-      var formatterM = new Intl.DateTimeFormat('en-US', { calendar: 'persian', month: 'numeric' });
-      var formatterName = new Intl.DateTimeFormat('fa-IR', { calendar: 'persian', month: 'long', year: 'numeric' });
-      
-      $('jp-month-year').textContent = formatterName.format(currentPickerDate);
-      
+      var fmtParts = new Intl.DateTimeFormat('en-US', { calendar:'persian', year:'numeric', month:'numeric' }).formatToParts(currentPickerDate);
+      var pY = parseInt(fmtParts.filter(function(p){ return p.type === 'year'; })[0].value, 10);
+      var pM = parseInt(fmtParts.filter(function(p){ return p.type === 'month'; })[0].value, 10);
+      var monthName = new Intl.DateTimeFormat('fa-IR', { calendar:'persian', month:'long', year:'numeric' }).format(currentPickerDate);
+      $('jp-month-year').textContent = monthName;
+
+      var todayParts = new Intl.DateTimeFormat('en-US', { calendar:'persian', year:'numeric', month:'numeric', day:'numeric' }).formatToParts(new Date());
+      var tY = parseInt(todayParts.filter(function(p){ return p.type==='year'; })[0].value,10);
+      var tM = parseInt(todayParts.filter(function(p){ return p.type==='month'; })[0].value,10);
+      var tD = parseInt(todayParts.filter(function(p){ return p.type==='day'; })[0].value,10);
+
+      var selVal = $('f-date').value.trim();
+      var selParts = selVal.split('/').map(function(x){ return parseInt(latin(x),10); });
+
       var grid = $('jp-grid');
-      grid.innerHTML = ['ش','ی','د','س','چ','پ','ج'].map(function(d){ return '<div class="jp-weekname">'+d+'</div>'; }).join('');
-      
-      // محاسبه روزهای ماه شمسی جاری
-      var pY = parseInt(formatterY.format(currentPickerDate));
-      var pM = parseInt(formatterM.format(currentPickerDate));
-      
-      // نمایش روزهای ۱ تا ۳۱ ماه (ساده‌شده برای انتخاب سریع)
-      for(var i=1; i<=30; i++){
-        var dStr = String(i).padStart(2,'0');
-        var mStr = String(pM).padStart(2,'0');
+      var html = ['ش','ی','د','س','چ','پ','ج'].map(function(d){ return '<div class="jp-weekname">'+d+'</div>'; }).join('');
+      var total = daysInPersianMonth(pM);
+      for(var i=1; i<=total; i++){
+        var mStr = String(pM).padStart(2,'0'), dStr = String(i).padStart(2,'0');
         var fullDate = pY + '/' + mStr + '/' + dStr;
-        grid.innerHTML += '<div class="jp-cell" data-val="'+fullDate+'">'+i.toLocaleString('fa-IR')+'</div>';
+        var cls = 'jp-cell';
+        if(pY===tY && pM===tM && i===tD) cls += ' today';
+        if(selParts.length===3 && selParts[0]===pY && selParts[1]===pM && selParts[2]===i) cls += ' selected';
+        html += '<div class="'+cls+'" data-val="'+fullDate+'">'+i.toLocaleString('fa-IR')+'</div>';
       }
+      grid.innerHTML = html;
     } catch(e){
-      $('jalali-picker.hidden');
+      togglePicker(false);
+      toast('تقویم در این مرورگر در دسترس نیست');
     }
   }
-
-  // مدیریت رویدادهای تقویم
   $('cal-btn').onclick = function(e){ e.stopPropagation(); togglePicker(); };
-  $('jp-prev').onclick = function(e){
-    e.stopPropagation();
-    currentPickerDate.setMonth(currentPickerDate.getMonth() - 1);
-    renderJalaliGrid();
-  };
-  $('jp-next').onclick = function(e){
-    e.stopPropagation();
-    currentPickerDate.setMonth(currentPickerDate.getMonth() + 1);
-    renderJalaliGrid();
-  };
+  $('jp-prev').onclick = function(e){ e.stopPropagation(); currentPickerDate.setMonth(currentPickerDate.getMonth()-1); renderJalaliGrid(); };
+  $('jp-next').onclick = function(e){ e.stopPropagation(); currentPickerDate.setMonth(currentPickerDate.getMonth()+1); renderJalaliGrid(); };
   $('jp-grid').onclick = function(e){
-    var cell = e.target.closest('.jp-cell');
-    if(!cell) return;
+    var cell = e.target.closest('.jp-cell'); if(!cell) return;
     $('f-date').value = cell.dataset.val;
     togglePicker(false);
   };
   document.addEventListener('click', function(e){
     if(!e.target.closest('.date-wrap')) togglePicker(false);
   });
-  // ----------------------------
 
-  var rec = null, recStream = null, recChunks = [], recTimer = null, recSeconds = 0;
+  /* ---------- form ---------- */
   function seg(el, defs, cur, cb){
     el.innerHTML = Object.keys(defs).map(function(k){
       return '<button type="button" data-k="'+k+'" aria-pressed="'+(cur===k)+'">'+defs[k]+'</button>';
@@ -556,15 +546,17 @@ body{background-image:radial-gradient(circle,var(--line) 1px,transparent 1.3px);
   }
   function renderPhotos(){
     var h = draft.photos.map(function(p, i){
-      return '<div class="ph"><img alt="" src="'+p+'" data-zoom="'+i+'"><button type="button" class="x" data-rm="'+i+'">×</button></div>';
+      return '<div class="ph"><img alt="عکس '+(i+1)+'" src="'+p+'" data-zoom="'+i+'"><button type="button" class="x" data-rm="'+i+'" aria-label="حذف عکس">×</button></div>';
     }).join('');
     h += '<button type="button" class="add-ph" id="add-cam"><span>📷</span>دوربین</button>';
     h += '<button type="button" class="add-ph" id="add-ph"><span>+</span>گالری</button>';
     $('f-photos').innerHTML = h;
+    $('add-cam').onclick = function(){ $('f-cam').click(); };
+    $('add-ph').onclick = function(){ $('f-file').click(); };
   }
   function renderVoices(){
     $('f-voices').innerHTML = (draft.voices || []).map(function(v, i){
-      return '<div class="vc"><audio controls src="'+v+'"></audio><button type="button" class="x" data-rmv="'+i+'">×</button></div>';
+      return '<div class="vc"><audio controls preload="none" src="'+v+'"></audio><button type="button" class="x" data-rmv="'+i+'" aria-label="حذف صدا">×</button></div>';
     }).join('');
   }
   function openForm(it){
@@ -572,6 +564,7 @@ body{background-image:radial-gradient(circle,var(--line) 1px,transparent 1.3px);
     stopRec(true);
     togglePicker(false);
     draft = it ? JSON.parse(JSON.stringify(it)) : {kind:'repair', status:'wait', photos:[], voices:[], date: todayShamsi()};
+    draft.photos = draft.photos || [];
     draft.voices = draft.voices || [];
     $('f-title').textContent = it ? 'ویرایش' : 'مورد جدید';
     seg($('f-kind'), KIND, draft.kind, function(k){ draft.kind = k; });
@@ -602,7 +595,16 @@ body{background-image:radial-gradient(circle,var(--line) 1px,transparent 1.3px);
         img.onerror = function(){ res(null); };
         img.src = fr.result;
       };
+      fr.onerror = function(){ res(null); };
       fr.readAsDataURL(file);
+    });
+  }
+  function addFiles(list){
+    if(!list || !list.length) return Promise.resolve();
+    toast('در حال آماده‌سازی عکس…');
+    return Promise.all(Array.prototype.map.call(list, shrink)).then(function(urls){
+      urls.forEach(function(u){ if(u) draft.photos.push(u); });
+      renderPhotos();
     });
   }
 
@@ -634,90 +636,159 @@ body{background-image:radial-gradient(circle,var(--line) 1px,transparent 1.3px);
     toast('ذخیره شد');
   }
 
+  /* ---------- voice recording ---------- */
+  var rec = null, recStream = null, recChunks = [], recTimer = null, recSeconds = 0;
   function updateRecTime(){
-    var m = Math.floor(recSeconds / 60), s = recSeconds % 60;
+    var m = Math.floor(recSeconds/60), s = recSeconds%60;
     $('rec-time').textContent = String(m).padStart(2,'0') + ':' + String(s).padStart(2,'0');
   }
+  function micErrorMessage(err){
+    var n = err && err.name || '';
+    if(!window.isSecureContext) return 'ضبط مستقیم فقط روی آدرس https کار می‌کند.';
+    if(n === 'NotAllowedError' || n === 'SecurityError') return 'اجازه‌ی میکروفون بسته است. از تنظیمات مرورگر اجازه بدهید.';
+    if(n === 'NotFoundError') return 'میکروفونی روی دستگاه پیدا نشد.';
+    if(n === 'NotReadableError') return 'میکروفون دست برنامه‌ی دیگری است.';
+    return 'دسترسی به میکروفون داده نشد. «ضبط با برنامه‌ی ضبط گوشی» را بزنید.';
+  }
   async function startRec(){
+    if(!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia || !window.MediaRecorder){
+      toast('ضبط مستقیم در این مرورگر پشتیبانی نمی‌شود. «ضبط با برنامه‌ی ضبط گوشی» را بزنید.', 5000);
+      return;
+    }
     try{
       recStream = await navigator.mediaDevices.getUserMedia({audio:true});
       var options = {};
-      if(MediaRecorder.isTypeSupported('audio/webm;codecs=opus')) options.mimeType = 'audio/webm;codecs=opus';
+      if(window.MediaRecorder.isTypeSupported && MediaRecorder.isTypeSupported('audio/webm;codecs=opus')) options.mimeType = 'audio/webm;codecs=opus';
       rec = new MediaRecorder(recStream, options);
       recChunks = [];
       rec.ondataavailable = function(e){ if(e.data && e.data.size > 0) recChunks.push(e.data); };
       rec.onstop = function(){
-        var blob = new Blob(recChunks, {type: rec.mimeType || 'audio/webm'});
-        var fr = new FileReader();
-        fr.onload = function(){
-          draft.voices = (draft.voices || []).concat([fr.result]);
-          renderVoices();
-        };
-        fr.readAsDataURL(blob);
+        if(recChunks.length){
+          var blob = new Blob(recChunks, {type: rec.mimeType || 'audio/webm'});
+          var fr = new FileReader();
+          fr.onload = function(){
+            draft.voices = (draft.voices || []).concat([fr.result]);
+            renderVoices();
+            toast('ویس اضافه شد');
+          };
+          fr.readAsDataURL(blob);
+        }
+        if(recStream){ recStream.getTracks().forEach(function(t){ t.stop(); }); recStream = null; }
       };
       rec.start(250);
       recSeconds = 0; updateRecTime();
       $('rec-btn').classList.add('on');
-      $('rec-label').textContent = 'توقف ضبط';
+      $('rec-label').textContent = 'توقف';
       recTimer = setInterval(function(){ recSeconds++; updateRecTime(); }, 1000);
     }catch(e){
-      toast('دسترسی به میکروفون داده نشد');
+      toast(micErrorMessage(e), 5000);
+      if(recStream){ recStream.getTracks().forEach(function(t){ t.stop(); }); recStream = null; }
+      rec = null;
     }
   }
   function stopRec(cancel){
     if(recTimer){ clearInterval(recTimer); recTimer = null; }
     if(rec){
-      try{ if(!cancel && rec.state !== 'inactive') rec.stop(); else rec.stream.getTracks().forEach(function(t){t.stop();}); }catch(e){}
+      try{
+        if(cancel){ recChunks = []; if(rec.state !== 'inactive') rec.stop(); }
+        else if(rec.state !== 'inactive'){ rec.stop(); }
+      }catch(e){}
       rec = null;
     }
-    if(recStream){ recStream.getTracks().forEach(function(t){t.stop();}); recStream = null; }
+    if(recStream){ recStream.getTracks().forEach(function(t){ t.stop(); }); recStream = null; }
     $('rec-btn').classList.remove('on');
     $('rec-label').textContent = 'ضبط صدا';
     $('rec-time').textContent = '';
   }
 
+  /* ---------- detail ---------- */
+  function itemText(it){
+    var lines = [it.name || 'بدون عنوان'];
+    lines.push(KIND[it.kind] + ' - ' + STATUS[it.status]);
+    if(it.device) lines.push('دستگاه: ' + it.device);
+    if(it.cust) lines.push('مشتری: ' + it.cust);
+    if(it.phone) lines.push('تلفن: ' + it.phone);
+    if(it.cost !== '' && it.cost != null) lines.push('هزینه: ' + fmtCost(it.cost));
+    if(it.date) lines.push('تاریخ: ' + it.date);
+    if(it.desc) lines.push('', it.desc);
+    return lines.join('\n');
+  }
+  function dataURLtoFile(du, name){
+    var m = /^data:(.*?);base64,(.*)$/.exec(du || ''); if(!m) return null;
+    var bin = atob(m[2]), arr = new Uint8Array(bin.length);
+    for(var i=0;i<bin.length;i++) arr[i] = bin.charCodeAt(i);
+    return new File([arr], name, {type: m[1]});
+  }
+  async function shareItem(it){
+    var text = itemText(it);
+    var files = (it.photos || []).slice(0,4).map(function(p,i){ return dataURLtoFile(p, 'photo'+(i+1)+'.jpg'); }).filter(Boolean);
+    if(navigator.share){
+      var payload = {title: it.name || 'آرشیو تعمیرات', text: text};
+      try{
+        if(files.length && navigator.canShare && navigator.canShare({files: files})) payload.files = files;
+        await navigator.share(payload);
+      }catch(e){ /* user cancelled or unsupported combo — ignore */ }
+    } else if(navigator.clipboard && navigator.clipboard.writeText){
+      try{ await navigator.clipboard.writeText(text); toast('متن کپی شد'); }
+      catch(e){ toast('اشتراک‌گذاری در این مرورگر پشتیبانی نمی‌شود'); }
+    } else {
+      toast('اشتراک‌گذاری در این مرورگر پشتیبانی نمی‌شود');
+    }
+  }
+  async function shareAll(){
+    var shown = shownItems();
+    if(!shown.length){ toast('موردی برای اشتراک‌گذاری نیست'); return; }
+    var text = 'آرشیو تعمیرات و پروژه‌ها\n\n' + shown.map(function(it,i){
+      return (i+1) + '. ' + (it.name || 'بدون عنوان') + ' - ' + STATUS[it.status] + (it.cust ? ' - ' + it.cust : '') + (it.cost !== '' && it.cost != null ? ' - ' + fmtCost(it.cost) : '');
+    }).join('\n');
+    if(navigator.share){
+      try{ await navigator.share({title:'آرشیو تعمیرات', text: text}); }catch(e){}
+    } else if(navigator.clipboard && navigator.clipboard.writeText){
+      try{ await navigator.clipboard.writeText(text); toast('لیست کپی شد'); }
+      catch(e){ toast('اشتراک‌گذاری در این مرورگر پشتیبانی نمی‌شود'); }
+    } else {
+      toast('اشتراک‌گذاری در این مرورگر پشتیبانی نمی‌شود');
+    }
+  }
+
   function showDetail(it){
     openId = it.id;
-    var phs = (it.photos || []).map(function(p, i){
-      return '<div class="hero"><img alt="" src="'+p+'" data-zoom-hero="'+i+'"></div>';
+    var hero = (it.photos && it.photos[0]) ? '<div class="hero"><img alt="عکس اصلی" src="'+it.photos[0]+'" data-zoom-hero="0"></div>' : '';
+    var extraPhotos = (it.photos || []).slice(1).map(function(p,i){
+      return '<div class="ph"><img alt="عکس '+(i+2)+'" src="'+p+'" data-zoom-hero="'+(i+1)+'"></div>';
     }).join('');
-    var vcs = (it.voices || []).map(function(v){
-      return '<div class="vc"><audio controls src="'+v+'"></audio></div>';
-    }).join('');
-    $('d-body').innerHTML = phs
+    var vcs = (it.voices || []).map(function(v){ return '<div class="vc"><audio controls preload="none" src="'+v+'"></audio></div>'; }).join('');
+    $('d-body').innerHTML = hero
       + '<h2 class="d-title">'+esc(it.name)+'</h2>'
-      + '<div class="row" style="margin-bottom:12px"><span class="badge s-'+it.status+'">'+STATUS[it.status]+'</span><span class="kind">'+ICO[it.kind]+KIND[it.kind]+'</span></div>'
+      + '<div class="row" style="margin-bottom:6px"><span class="badge s-'+it.status+'">'+STATUS[it.status]+'</span><span class="kind">'+ICO[it.kind]+KIND[it.kind]+'</span></div>'
       + '<dl class="meta">'
       + (it.device ? '<dt>دستگاه</dt><dd>'+esc(it.device)+'</dd>' : '')
       + (it.cust ? '<dt>مشتری</dt><dd>'+esc(it.cust)+'</dd>' : '')
-      + (it.phone ? '<dt>تلفن</dt><dd><a href="tel:'+esc(it.phone)+'" dir="ltr" style="display:inline-block">'+esc(it.phone)+'</a></dd>' : '')
+      + (it.phone ? '<dt>تلفن</dt><dd><a href="tel:'+esc(it.phone)+'" dir="ltr" style="display:inline-block;color:inherit">'+esc(it.phone)+'</a></dd>' : '')
       + (it.cost !== '' && it.cost != null ? '<dt>هزینه</dt><dd>'+fmtCost(it.cost)+'</dd>' : '')
       + (it.date ? '<dt>تاریخ</dt><dd>'+esc(it.date)+'</dd>' : '')
       + '</dl>'
       + (it.desc ? '<div class="notes">'+esc(it.desc)+'</div>' : '')
       + (vcs ? '<div class="voices">'+vcs+'</div>' : '')
-      + '<div class="actions"><button class="btn" id="d-edit">ویرایش</button><button class="btn danger" id="d-del">حذف</button></div>';
-
+      + (extraPhotos ? '<div class="photos">'+extraPhotos+'</div>' : '')
+      + '<div class="actions"><button class="btn" id="d-share">اشتراک‌گذاری</button><button class="btn" id="d-edit">ویرایش</button><button class="btn danger" id="d-del">حذف</button></div>';
     $('detail').hidden = false; $('detail').scrollTop = 0;
   }
   function closeDetail(){ openId = null; $('detail').hidden = true; }
 
-  // Event Listeners
-  window.addEventListener('DOMContentLoaded', async function(){
-    await initStorage();
+  /* ---------- wire up events ---------- */
+  function init(){
     renderChips();
     renderList();
 
     $('q').oninput = function(e){ query = e.target.value; renderList(); };
     $('chips').onclick = function(e){
       var b = e.target.closest('button'); if(!b) return;
-      filter = b.dataset.f;
-      renderChips(); renderList();
+      filter = b.dataset.f; renderChips(); renderList();
     };
     $('stats').onclick = function(e){
       var b = e.target.closest('button'); if(!b) return;
-      var f = b.dataset.f;
-      filter = (filter === f ? 'all' : f);
+      filter = (filter === b.dataset.f) ? 'all' : b.dataset.f;
       renderChips(); renderList();
     };
 
@@ -725,96 +796,69 @@ body{background-image:radial-gradient(circle,var(--line) 1px,transparent 1.3px);
     $('f-cancel').onclick = closeForm;
     $('f-save').onclick = save;
 
-    $('add-cam') && ($('add-cam').onclick = function(){ $('f-cam').click(); });
-    $('add-ph') && ($('add-ph').onclick = function(){ $('f-file').click(); });
-
-    $('f-file').onchange = async function(e){
-      for(var file of e.target.files){
-        var url = await shrink(file);
-        if(url) draft.photos.push(url);
-      }
-      e.target.value = '';
-      renderPhotos();
-    };
-    $('f-cam').onchange = async function(e){
-      for(var file of e.target.files){
-        var url = await shrink(file);
-        if(url) draft.photos.push(url);
-      }
-      e.target.value = '';
-      renderPhotos();
-    };
+    $('f-file').onchange = function(e){ addFiles(e.target.files); e.target.value = ''; };
+    $('f-cam').onchange = function(e){ addFiles(e.target.files); e.target.value = ''; };
 
     $('f-photos').onclick = function(e){
-      var rm = e.target.dataset.rm;
-      if(rm != null){
-        draft.photos.splice(Number(rm), 1);
-        renderPhotos();
-        return;
-      }
-      var zoom = e.target.dataset.zoom;
-      if(zoom != null){
-        $('lb-img').src = draft.photos[Number(zoom)];
-        $('lb').hidden = false;
-      }
+      var rm = e.target.closest('[data-rm]');
+      if(rm){ draft.photos.splice(Number(rm.dataset.rm), 1); renderPhotos(); return; }
+      var z = e.target.closest('[data-zoom]');
+      if(z){ $('lb-img').src = draft.photos[Number(z.dataset.zoom)]; $('lb').hidden = false; }
     };
 
-    $('rec-btn').onclick = function(){
-      if(rec) stopRec(false); else startRec();
-    };
+    $('rec-btn').onclick = function(){ if(rec) stopRec(false); else startRec(); };
     $('rec-app').onclick = function(){ $('f-aud').click(); };
-    $('f-aud').onchange = async function(e){
-      var file = e.target.files[0];
+    $('f-aud').onchange = function(e){
+      var file = e.target.files && e.target.files[0]; e.target.value = '';
       if(!file) return;
       var fr = new FileReader();
-      fr.onload = function(){
-        draft.voices = (draft.voices || []).concat([fr.result]);
-        renderVoices();
-      };
+      fr.onload = function(){ draft.voices = (draft.voices || []).concat([fr.result]); renderVoices(); toast('ویس اضافه شد'); };
+      fr.onerror = function(){ toast('فایل صوتی خوانده نشد'); };
       fr.readAsDataURL(file);
-      e.target.value = '';
     };
-
     $('f-voices').onclick = function(e){
-      var rmv = e.target.dataset.rmv;
-      if(rmv != null){
-        draft.voices.splice(Number(rmv), 1);
-        renderVoices();
-      }
+      var b = e.target.closest('[data-rmv]'); if(!b) return;
+      draft.voices.splice(Number(b.dataset.rmv), 1); renderVoices();
     };
 
     $('list').onclick = function(e){
-      var btn = e.target.closest('.item'); if(!btn) return;
-      var it = items.find(function(x){ return x.id === btn.dataset.id; });
+      var b = e.target.closest('.item'); if(!b) return;
+      var it = items.find(function(x){ return x.id === b.dataset.id; });
       if(it) showDetail(it);
     };
 
     $('d-back').onclick = closeDetail;
     $('d-body').onclick = function(e){
-      var zoom = e.target.dataset.zoomHero;
-      if(zoom != null && openId){
+      var z = e.target.closest('[data-zoom-hero]');
+      if(z && openId){
         var it = items.find(function(x){ return x.id === openId; });
-        if(it && it.photos[Number(zoom)]){
-          $('lb-img').src = it.photos[Number(zoom)];
+        if(it && it.photos && it.photos[Number(z.dataset.zoomHero)]){
+          $('lb-img').src = it.photos[Number(z.dataset.zoomHero)];
           $('lb').hidden = false;
         }
         return;
       }
+      if(e.target.id === 'd-share' && openId){
+        var itS = items.find(function(x){ return x.id === openId; });
+        if(itS) shareItem(itS);
+        return;
+      }
       if(e.target.id === 'd-edit' && openId){
-        var it = items.find(function(x){ return x.id === openId; });
-        if(it){ closeDetail(); openForm(it); }
+        var itE = items.find(function(x){ return x.id === openId; });
+        if(itE){ closeDetail(); openForm(itE); }
+        return;
       }
       if(e.target.id === 'd-del' && openId){
         var btn = e.target;
         if(!btn.classList.contains('armed')){
-          btn.classList.add('armed');
-          btn.textContent = 'تایید حذف؟';
-          setTimeout(function(){ btn.classList.remove('armed'); btn.textContent = 'حذف'; }, 3000);
+          btn.classList.add('armed'); btn.textContent = 'بله، حذف شود';
+          setTimeout(function(){ if(btn.isConnected){ btn.classList.remove('armed'); btn.textContent = 'حذف'; } }, 4000);
           return;
         }
-        deleteItem(openId).then(function(ok){
+        var id = openId;
+        deleteItem(id).then(function(ok){
           if(ok){
-            items = items.filter(function(x){ return x.id !== openId; });
+            items = items.filter(function(x){ return x.id !== id; });
             closeDetail(); renderList(); toast('حذف شد');
           }
         });
@@ -822,6 +866,12 @@ body{background-image:radial-gradient(circle,var(--line) 1px,transparent 1.3px);
     };
 
     $('lb').onclick = function(){ $('lb').hidden = true; };
+    document.addEventListener('keydown', function(e){
+      if(e.key !== 'Escape') return;
+      if(!$('lb').hidden) $('lb').hidden = true;
+      else if(!$('form').hidden) closeForm();
+      else if(!$('detail').hidden) closeDetail();
+    });
 
     $('export-data').onclick = exportData;
     $('import-data').onclick = function(){ $('import-file').click(); };
@@ -829,30 +879,24 @@ body{background-image:radial-gradient(circle,var(--line) 1px,transparent 1.3px);
       if(e.target.files[0]) importData(e.target.files[0]);
       e.target.value = '';
     };
-    $('share-all').onclick = async function(){
-      var text = items.map(function(it, i){
-        return (i+1) + '. ' + it.name + (it.device ? ' ('+it.device+')' : '') + ' - ' + STATUS[it.status] + (it.cost ? ' - ' + fmtCost(it.cost) : '');
-      }).join('\n');
-      if(!text){ toast('موردی وجود ندارد'); return; }
-      if(navigator.share){
-        try{ await navigator.share({title:'آرشیو تعمیرات', text:text}); }catch(e){}
-      } else {
-        navigator.clipboard.writeText(text);
-        toast('لیست در کلیپ‌بورد کپی شد');
-      }
-    };
+    $('share-all').onclick = shareAll;
 
-    var savedTheme = localStorage.getItem('repair_archive_theme');
-    if(savedTheme) document.documentElement.setAttribute('data-theme', savedTheme);
+    var savedTheme = null;
+    try{ savedTheme = localStorage.getItem('repair_archive_theme'); }catch(e){}
+    if(savedTheme){ document.documentElement.setAttribute('data-theme', savedTheme); $('theme-toggle').textContent = savedTheme === 'dark' ? '☀️' : '🌙'; }
     $('theme-toggle').onclick = function(){
       var current = document.documentElement.getAttribute('data-theme');
       var next = current === 'dark' ? 'light' : (current === 'light' ? '' : 'dark');
       if(next) document.documentElement.setAttribute('data-theme', next);
       else document.documentElement.removeAttribute('data-theme');
-      localStorage.setItem('repair_archive_theme', next);
+      try{ localStorage.setItem('repair_archive_theme', next); }catch(e){}
       $('theme-toggle').textContent = next === 'dark' ? '☀️' : '🌙';
     };
-  });
+
+    try{ if(navigator.storage && navigator.storage.persist) navigator.storage.persist(); }catch(e){}
+  }
+
+  initStorage().then(init);
 })();
 </script>
 </body>
