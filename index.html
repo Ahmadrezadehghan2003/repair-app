@@ -430,6 +430,7 @@ body{padding-left:env(safe-area-inset-left,0px);padding-right:env(safe-area-inse
   }
 
   /* ---------- form ---------- */
+  var rec = null, recStream = null, recChunks = [], recTimer = null, recSeconds = 0;
   function seg(el, defs, cur, cb){
     el.innerHTML = Object.keys(defs).map(function(k){
       return '<button type="button" data-k="'+k+'" aria-pressed="'+(cur===k)+'">'+defs[k]+'</button>';
@@ -447,6 +448,11 @@ body{padding-left:env(safe-area-inset-left,0px);padding-right:env(safe-area-inse
     h += '<button type="button" class="add-ph" id="add-cam"><span>📷</span>دوربین</button>';
     h += '<button type="button" class="add-ph" id="add-ph"><span>+</span>از گالری</button>';
     $('f-photos').innerHTML = h;
+  }
+  function renderVoices(){
+    $('f-voices').innerHTML = (draft.voices || []).map(function(v, i){
+      return '<div class="vc"><audio controls src="'+v+'"></audio><button type="button" class="x" data-rmv="'+i+'" aria-label="حذف صوت">×</button></div>';
+    }).join('');
   }
   function openForm(it){
     editing = it ? it.id : null;
@@ -489,282 +495,303 @@ body{padding-left:env(safe-area-inset-left,0px);padding-right:env(safe-area-inse
 
   async function save(){
     if(rec){ toast('اول ضبط صدا را متوقف کنید'); return; }
-    var name=$('f-name').value.trim();
-    if(!name){toast('عنوان را بنویسید');$('f-name').focus();return;}
-    var costRaw=latin($('f-cost').value).replace(/[^\d.]/g,'');
-    var record={id:editing||uid(),created:draft.created||Date.now(),kind:draft.kind,status:draft.status,photos:draft.photos||[],voices:draft.voices||[],name:name,device:$('f-device').value.trim(),desc:$('f-desc').value.trim(),cust:$('f-cust').value.trim(),phone:latin($('f-phone').value).trim(),cost:costRaw===''?'':Number(costRaw),date:$('f-date').value};
-    var old=items.find(function(x){return x.id===record.id;});
+    var name = $('f-name').value.trim();
+    if(!name){ toast('عنوان را بنویسید'); $('f-name').focus(); return; }
+    var costRaw = latin($('f-cost').value).replace(/[^\d.]/g,'');
+    var record = {
+      id: editing || uid(),
+      created: draft.created || Date.now(),
+      kind: draft.kind,
+      status: draft.status,
+      photos: draft.photos || [],
+      voices: draft.voices || [],
+      name: name,
+      device: $('f-device').value.trim(),
+      desc: $('f-desc').value.trim(),
+      cust: $('f-cust').value.trim(),
+      phone: latin($('f-phone').value).trim(),
+      cost: costRaw === '' ? '' : Number(costRaw),
+      date: $('f-date').value
+    };
     if(!(await saveItem(record))) return;
-    var i=items.findIndex(function(x){return x.id===record.id}); if(i>=0) items[i]=record; else items.push(record);
-    closeForm(); renderList(); if(openId===record.id) showDetail(record.id); toast(old?'ویرایش ذخیره شد':'مورد جدید ذخیره شد');
+    var i = items.findIndex(function(x){ return x.id === record.id; });
+    if(i >= 0) items[i] = record; else items.push(record);
+    closeForm(); renderList();
+    if(openId === record.id) showDetail(record);
+    toast('ذخیره شد');
+  }
+
+  /* Audio Recorder */
+  function updateRecTime(){
+    var m = Math.floor(recSeconds / 60), s = recSeconds % 60;
+    $('rec-time').textContent = String(m).padStart(2,'0') + ':' + String(s).padStart(2,'0');
+  }
+  async function startRec(){
+    try{
+      recStream = await navigator.mediaDevices.getUserMedia({audio:true});
+      var options = {};
+      if(MediaRecorder.isTypeSupported('audio/webm;codecs=opus')) options.mimeType = 'audio/webm;codecs=opus';
+      else if(MediaRecorder.isTypeSupported('audio/mp4')) options.mimeType = 'audio/mp4';
+      rec = new MediaRecorder(recStream, options);
+      recChunks = [];
+      rec.ondataavailable = function(e){ if(e.data && e.data.size > 0) recChunks.push(e.data); };
+      rec.onstop = function(){
+        var blob = new Blob(recChunks, {type: rec.mimeType || 'audio/webm'});
+        var fr = new FileReader();
+        fr.onload = function(){
+          draft.voices = (draft.voices || []).concat([fr.result]);
+          renderVoices();
+        };
+        fr.readAsDataURL(blob);
+      };
+      rec.start(250);
+      recSeconds = 0; updateRecTime();
+      $('rec-btn').classList.add('on');
+      $('rec-label').textContent = 'توقف ضبط';
+      recTimer = setInterval(function(){ recSeconds++; updateRecTime(); }, 1000);
+    }catch(e){
+      toast('دسترسی به میکروفون داده نشد یا پشتیبانی نمی‌شود');
+    }
+  }
+  function stopRec(cancel){
+    if(recTimer){ clearInterval(recTimer); recTimer = null; }
+    if(rec){
+      try{ if(!cancel && rec.state !== 'inactive') rec.stop(); else rec.stream.getTracks().forEach(function(t){t.stop();}); }catch(e){}
+      rec = null;
+    }
+    if(recStream){ recStream.getTracks().forEach(function(t){t.stop();}); recStream = null; }
+    $('rec-btn').classList.remove('on');
+    $('rec-label').textContent = 'ضبط صدا';
+    $('rec-time').textContent = '';
   }
 
   /* ---------- detail ---------- */
-  function showDetail(id){
-    var it = items.find(function(x){ return x.id === id; }); if(!it) return;
-    openId = id;
-    var rows = [
-      ['نوع', KIND[it.kind]], ['دستگاه', it.device], ['مشتری', it.cust],
-      ['تلفن', it.phone ? '<a href="tel:'+esc(it.phone)+'" dir="ltr" style="color:inherit">'+esc(it.phone)+'</a>' : ''],
-      ['هزینه', fmtCost(it.cost)], ['تاریخ', fmtDate(it.date)]
-    ].filter(function(r){ return r[1]; });
-    var h = (it.photos && it.photos[0] ? '<div class="hero"><img alt="عکس اصلی" src="'+it.photos[0]+'" data-zoom="0"></div>' : '') + '<h3 class="d-title">'+esc(it.name)+'</h3><span class="badge s-'+it.status+'">'+STATUS[it.status]+'</span>';
-    h += '<dl class="meta">' + rows.map(function(r){ return '<dt>'+r[0]+'</dt><dd>'+(r[0]==='تلفن' ? r[1] : esc(r[1]))+'</dd>'; }).join('') + '</dl>';
-    if(it.desc) h += '<div class="notes">'+esc(it.desc)+'</div>';
-    if(it.voices && it.voices.length){
-      h += '<div class="voices">' + it.voices.map(function(v){ return '<div class="vc"><audio controls preload="none" src="'+v.data+'"></audio></div>'; }).join('') + '</div>';
-    }
-    if(it.photos && it.photos.length){
-      h += '<div class="photos">' + it.photos.map(function(p, i){ return '<div class="ph"><img alt="عکس '+(i+1)+'" src="'+p+'" data-zoom="'+i+'"></div>'; }).join('') + '</div>';
-    }
-    h += '<div class="actions"><button class="btn" id="d-share">اشتراک‌گذاری</button><button class="btn" id="d-edit">ویرایش</button><button class="btn danger" id="d-del">حذف</button></div>';
-    $('d-body').innerHTML = h;
+  function showDetail(it){
+    openId = it.id;
+    var phs = (it.photos || []).map(function(p, i){
+      return '<div class="hero"><img alt="تصویر '+(i+1)+'" src="'+p+'" data-zoom-detail="'+i+'"></div>';
+    }).join('');
+    var vcs = (it.voices || []).map(function(v){
+      return '<div class="vc"><audio controls src="'+v+'"></audio></div>';
+    }).join('');
+    var meta = '<dl class="meta">'
+      + '<dt>نوع</dt><dd>'+KIND[it.kind]+'</dd>'
+      + '<dt>وضعیت</dt><dd>'+STATUS[it.status]+'</dd>'
+      + (it.device ? '<dt>دستگاه</dt><dd>'+esc(it.device)+'</dd>' : '')
+      + (it.cust ? '<dt>مشتی</dt><dd>'+esc(it.cust)+'</dd>' : '')
+      + (it.phone ? '<dt>تلفن</dt><dd><a href="tel:'+esc(it.phone)+'" dir="ltr" style="display:inline-block">'+esc(it.phone)+'</a></dd>' : '')
+      + (it.date ? '<dt>تاریخ</dt><dd>'+fmtDate(it.date)+'</dd>' : '')
+      + (it.cost !== '' && it.cost != null ? '<dt>هزینه</dt><dd>'+fmtCost(it.cost)+'</dd>' : '')
+      + '</dl>';
+
+    $('d-body').innerHTML = phs
+      + '<h1 class="d-title">'+esc(it.name)+'</h1>'
+      + meta
+      + (it.desc ? '<div class="notes">'+esc(it.desc)+'</div>' : '')
+      + (vcs ? '<label>یادداشت‌های صوتی</label><div class="voices">'+vcs+'</div>' : '')
+      + '<div class="actions">'
+      + '<button class="btn" id="d-edit">ویرایش</button>'
+      + '<button class="btn" id="d-share">اشتراک‌گذاری جزئیات</button>'
+      + '<button class="btn danger" id="d-del">حذف</button>'
+      + '</div>';
     $('detail').hidden = false; $('detail').scrollTop = 0;
+  }
+  function closeDetail(){ $('detail').hidden = true; openId = null; }
+
+  function shareItemText(it){
+    return [
+      '📌 ' + (it.name || ''),
+      it.device ? 'دستگاه: ' + it.device : '',
+      it.cust ? 'مشتری: ' + it.cust : '',
+      it.phone ? 'تلفن: ' + it.phone : '',
+      'وضعیت: ' + STATUS[it.status],
+      it.date ? 'تاریخ: ' + fmtDate(it.date) : '',
+      it.cost !== '' && it.cost != null ? 'هزینه: ' + fmtCost(it.cost) : '',
+      it.desc ? '\nتوضیحات:\n' + it.desc : ''
+    ].filter(Boolean).join('\n');
+  }
+
+  function shareListText(){
+    var shown = items.filter(matches);
+    return '📋 لیست آرشیو تعمیرات و پروژه‌ها (' + shown.length.toLocaleString('fa-IR') + ' مورد):\n\n' + shown.map(function(it, idx){
+      return (idx+1) + '. ' + (it.name || '') + (it.device ? ' ('+it.device+')' : '') + ' - ' + STATUS[it.status] + (it.cost !== '' && it.cost != null ? ' - ' + fmtCost(it.cost) : '');
+    }).join('\n');
   }
 
   /* ---------- events ---------- */
-  $('add').onclick = function(){ openForm(null); };
-  $('f-cancel').onclick = closeForm;
-  $('f-save').onclick = save;
-  $('export-data').onclick=exportData;
-  $('import-data').onclick=function(){ $('import-file').click(); };
-  $('import-file').onchange=function(e){ var f=e.target.files&&e.target.files[0]; e.target.value=''; if(f) importData(f); };
-  $('theme-toggle').onclick=function(){ var root=document.documentElement, cur=root.getAttribute('data-theme'); var next=cur==='dark'?'light':'dark'; root.setAttribute('data-theme',next); localStorage.setItem('repair_archive_theme',next); $('theme-toggle').textContent=next==='dark'?'☀️':'🌙'; };
-  $('d-back').onclick = function(){ $('detail').hidden = true; openId = null; };
-  $('q').oninput = function(e){ query = e.target.value.trim(); renderList(); };
-  $('chips').onclick = function(e){
-    var b = e.target.closest('button'); if(!b) return;
-    filter = b.dataset.f; renderChips(); renderList();
-  };
-  $('stats').onclick = function(e){
-    var b = e.target.closest('.stat'); if(!b) return;
-    filter = (filter === b.dataset.f) ? 'all' : b.dataset.f; renderChips(); renderList();
-  };
-  $('list').onclick = function(e){
-    var b = e.target.closest('.item'); if(b) showDetail(b.dataset.id);
-  };
-  $('f-photos').onclick = function(e){
-    if(e.target.closest('#add-cam')){ $('f-cam').click(); return; }
-    if(e.target.closest('#add-ph')){ $('f-file').click(); return; }
-    var rm = e.target.closest('[data-rm]');
-    if(rm){ draft.photos.splice(Number(rm.dataset.rm), 1); renderPhotos(); return; }
-    var z = e.target.closest('[data-zoom]');
-    if(z) zoom(draft.photos[Number(z.dataset.zoom)]);
-  };
-  function addFiles(e){
-    var files = Array.prototype.slice.call(e.target.files || []);
-    e.target.value = '';
-    if(!files.length) return;
-    toast('در حال آماده‌سازی عکس…');
-    Promise.all(files.map(shrink)).then(function(list){
-      list.forEach(function(p){ if(p) draft.photos.push(p); });
-      renderPhotos();
-    });
-  }
-  $('f-file').onchange = addFiles;
-  $('f-cam').onchange = addFiles;
+  document.addEventListener('DOMContentLoaded', async function(){
+    await initStorage();
+    renderChips();
+    renderList();
 
-  /* ---------- voice notes ---------- */
-  var rec = null;
-  function fmtDur(s){
-    s = Math.floor(s); var m = Math.floor(s/60), r = s % 60;
-    return m.toLocaleString('fa-IR') + ':' + (r < 10 ? '۰' : '') + r.toLocaleString('fa-IR');
-  }
-  function renderVoices(){
-    $('f-voices').innerHTML = draft.voices.map(function(v, i){
-      return '<div class="vc"><audio controls preload="none" src="'+v.data+'"></audio><button type="button" class="x" data-vrm="'+i+'" aria-label="حذف صدا">×</button></div>';
-    }).join('');
-  }
-  function setRecUI(on){
-    $('rec-btn').classList.toggle('on', on);
-    $('rec-label').textContent = on ? 'توقف' : 'ضبط صدا';
-    if(!on) $('rec-time').textContent = '';
-  }
-  function stopRec(discard){
-    if(!rec) return;
-    var r = rec; rec = null;
-    r.discard = !!discard;
-    clearInterval(r.timer);
-    try{ if(r.mr.state !== 'inactive') r.mr.stop(); }catch(e){}
-    r.stream.getTracks().forEach(function(t){ t.stop(); });
-    setRecUI(false);
-  }
-  function micError(err){
-    var n = err && err.name || '';
-    if(!window.isSecureContext) return 'ضبط مستقیم فقط روی آدرس https یا داخل APK کار می‌کند. اگر فایل را از حافظه‌ی گوشی باز کرده‌اید، کار نمی‌کند.';
-    if(n === 'NotAllowedError' || n === 'SecurityError') return 'اجازه‌ی میکروفون بسته است. در کروم روی آیکون کنار آدرس بزنید، دسترسی‌ها، میکروفون، اجازه.';
-    if(n === 'NotFoundError') return 'میکروفونی روی دستگاه پیدا نشد.';
-    if(n === 'NotReadableError') return 'میکروفون دست برنامه‌ی دیگری است. آن را ببندید و دوباره امتحان کنید.';
-    return 'ضبط شروع نشد (' + (n || 'خطای نامشخص') + '). «ضبط با برنامه‌ی ضبط گوشی» را بزنید.';
-  }
-  function toggleRec(){
-    if(rec){ stopRec(false); return; }
-    if(!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia){
-      toast(micError(null) , 6000); return;
+    // Theme toggle
+    var darkPref = window.matchMedia('(prefers-color-scheme: dark)');
+    function updateThemeBtn(){
+      var cur = document.documentElement.getAttribute('data-theme');
+      var isDark = cur === 'dark' || (!cur && darkPref.matches);
+      $('theme-toggle').textContent = isDark ? '☀️' : '🌙';
     }
-    if(!window.MediaRecorder){ toast('این مرورگر ضبط صدا را پشتیبانی نمی‌کند. «ضبط با برنامه‌ی ضبط گوشی» را بزنید.', 6000); return; }
-    navigator.mediaDevices.getUserMedia({audio:true}).then(function(stream){
-      var mr, mime;
-      try{
-        mime = ['audio/webm;codecs=opus','audio/webm','audio/mp4','audio/ogg;codecs=opus'].filter(function(m){
-          try{ return MediaRecorder.isTypeSupported(m); }catch(e){ return false; }
-        })[0];
-        mr = mime ? new MediaRecorder(stream, {mimeType: mime}) : new MediaRecorder(stream);
-      }catch(err){
-        stream.getTracks().forEach(function(t){ t.stop(); });
-        toast('ضبط شروع نشد (' + (err && err.name || 'MediaRecorder') + '). «ضبط با برنامه‌ی ضبط گوشی» را بزنید.', 6000);
+    updateThemeBtn();
+    $('theme-toggle').onclick = function(){
+      var cur = document.documentElement.getAttribute('data-theme');
+      var isDark = cur === 'dark' || (!cur && darkPref.matches);
+      var next = isDark ? 'light' : 'dark';
+      document.documentElement.setAttribute('data-theme', next);
+      try{ localStorage.setItem('repair_archive_theme', next); }catch(e){}
+      updateThemeBtn();
+    };
+    try{
+      var savedTheme = localStorage.getItem('repair_archive_theme');
+      if(savedTheme) document.documentElement.setAttribute('data-theme', savedTheme);
+    }catch(e){}
+
+    // Search & Filter
+    $('q').oninput = function(e){ query = e.target.value; renderList(); };
+    $('chips').onclick = function(e){
+      var b = e.target.closest('button'); if(!b) return;
+      filter = b.dataset.f;
+      renderChips(); renderList();
+    };
+    $('stats').onclick = function(e){
+      var b = e.target.closest('button'); if(!b) return;
+      var f = b.dataset.f;
+      filter = (filter === f ? 'all' : f);
+      renderChips(); renderList();
+    };
+
+    // List click
+    $('list').onclick = function(e){
+      var itemEl = e.target.closest('.item'); if(!itemEl) return;
+      var it = items.find(function(x){ return x.id === itemEl.dataset.id; });
+      if(it) showDetail(it);
+    };
+
+    // FAB & Toolbar
+    $('add').onclick = function(){ openForm(null); };
+    $('export-data').onclick = exportData;
+    $('import-data').onclick = function(){ $('import-file').click(); };
+    $('import-file').onchange = function(e){ if(e.target.files[0]) importData(e.target.files[0]); e.target.value = ''; };
+    $('share-all').onclick = async function(){
+      var text = shareListText();
+      if(navigator.share){
+        try{ await navigator.share({title:'آرشیو تعمیرات', text:text}); return; }catch(e){}
+      }
+      navigator.clipboard.writeText(text).then(function(){ toast('لیست در کلیپ‌بورد کپی شد'); }).catch(function(){ toast('امکان کپی لیست نبود'); });
+    };
+
+    // Form buttons
+    $('f-cancel').onclick = closeForm;
+    $('f-save').onclick = save;
+
+    // Photos handling
+    $('f-photos').onclick = async function(e){
+      var rm = e.target.dataset.rm;
+      if(rm != null){
+        draft.photos.splice(Number(rm), 1);
+        renderPhotos(); return;
+      }
+      var zoom = e.target.dataset.zoom;
+      if(zoom != null){
+        $('lb-img').src = draft.photos[Number(zoom)];
+        $('lb').hidden = false;
         return;
       }
-      var chunks = [], start = Date.now();
-      var r = {mr: mr, stream: stream, discard: false};
-      mr.ondataavailable = function(ev){ if(ev.data && ev.data.size) chunks.push(ev.data); };
-      mr.onerror = function(){ stopRec(true); toast('ضبط با خطا متوقف شد', 4000); };
-      mr.onstop = function(){
-        if(r.discard || !chunks.length) return;
-        var type = String(mr.mimeType || mime || 'audio/webm').split(';')[0];
+      if(e.target.closest('#add-cam')) $('f-cam').click();
+      if(e.target.closest('#add-ph')) $('f-file').click();
+    };
+    $('f-cam').onchange = async function(e){
+      var files = e.target.files;
+      if(files && files[0]){
+        var b64 = await shrink(files[0]);
+        if(b64) draft.photos.push(b64);
+        renderPhotos();
+      }
+      e.target.value = '';
+    };
+    $('f-file').onchange = async function(e){
+      var files = e.target.files;
+      if(files){
+        for(var i=0; i<files.length; i++){
+          var b64 = await shrink(files[i]);
+          if(b64) draft.photos.push(b64);
+        }
+        renderPhotos();
+      }
+      e.target.value = '';
+    };
+
+    // Audio recording events
+    $('rec-btn').onclick = function(){
+      if(rec) stopRec(false);
+      else startRec();
+    };
+    $('rec-app').onclick = function(){
+      $('f-aud').click();
+    };
+    $('f-aud').onchange = function(e){
+      var f = e.target.files[0];
+      if(f){
         var fr = new FileReader();
         fr.onload = function(){
-          draft.voices.push({data: fr.result, dur: (Date.now() - start) / 1000, t: Date.now()});
-          renderVoices(); toast('ویس اضافه شد');
+          draft.voices = (draft.voices || []).concat([fr.result]);
+          renderVoices();
         };
-        fr.readAsDataURL(new Blob(chunks, {type: type}));
-      };
-      try{ mr.start(1000); }catch(err){
-        stream.getTracks().forEach(function(t){ t.stop(); });
-        toast('ضبط شروع نشد (' + (err && err.name || 'start') + ')', 6000); return;
+        fr.readAsDataURL(f);
       }
-      r.timer = setInterval(function(){ $('rec-time').textContent = fmtDur((Date.now() - start) / 1000); }, 500);
-      rec = r; setRecUI(true); $('rec-time').textContent = fmtDur(0);
-    }).catch(function(err){ toast(micError(err), 6000); });
-  }
-  $('rec-btn').onclick = toggleRec;
-  $('rec-app').onclick = function(){ $('f-aud').click(); };
-  $('f-aud').onchange = function(e){
-    var f = e.target.files && e.target.files[0]; e.target.value = '';
-    if(!f) return;
-    var fr = new FileReader();
-    fr.onload = function(){ draft.voices.push({data: fr.result, dur: 0, t: Date.now()}); renderVoices(); toast('ویس اضافه شد'); };
-    fr.onerror = function(){ toast('فایل صوتی خوانده نشد'); };
-    fr.readAsDataURL(f);
-  };
-  $('f-voices').onclick = function(e){
-    var b = e.target.closest('[data-vrm]'); if(!b) return;
-    draft.voices.splice(Number(b.dataset.vrm), 1); renderVoices();
-  };
-  $('d-body').onclick = function(e){
-    if(e.target.id === 'd-share'){ var shareIt=items.find(function(x){return x.id===openId}); if(shareIt) shareItem(shareIt); return; }
-    var z = e.target.closest('[data-zoom]');
-    if(z){ var it = items.find(function(x){ return x.id === openId; }); zoom(it.photos[Number(z.dataset.zoom)]); return; }
-    if(e.target.id === 'd-edit'){ openForm(items.find(function(x){ return x.id === openId; })); return; }
-    if(e.target.id === 'd-del'){
-      var b = e.target;
-      if(!b.classList.contains('armed')){
-        b.classList.add('armed'); b.textContent = 'بله، حذف شود';
-        setTimeout(function(){ if(b.isConnected){ b.classList.remove('armed'); b.textContent = 'حذف'; } }, 4000);
+      e.target.value = '';
+    };
+    $('f-voices').onclick = function(e){
+      var rmv = e.target.dataset.rmv;
+      if(rmv != null){
+        draft.voices.splice(Number(rmv), 1);
+        renderVoices();
+      }
+    };
+
+    // Detail sheet
+    $('d-back').onclick = closeDetail;
+    $('d-body').onclick = async function(e){
+      var zoom = e.target.dataset.zoomDetail;
+      if(zoom != null){
+        var it = items.find(function(x){ return x.id === openId; });
+        if(it && it.photos && it.photos[zoom]){
+          $('lb-img').src = it.photos[zoom];
+          $('lb').hidden = false;
+        }
         return;
       }
-      var id = openId;
-      deleteItem(id).then(function(ok){ if(ok){ items=items.filter(function(x){return x.id!==id}); $('detail').hidden=true; openId=null; renderList(); toast('حذف شد'); } });
-    }
-  };
-  function itemText(it){
-    var lines = [it.name || 'بدون عنوان'];
-    lines.push('وضعیت: ' + STATUS[it.status]);
-    if(it.kind) lines.push('نوع: ' + KIND[it.kind]);
-    if(it.device) lines.push('دستگاه: ' + it.device);
-    if(it.cust) lines.push('مشتری: ' + it.cust);
-    if(it.phone) lines.push('تلفن: ' + it.phone);
-    if(it.cost !== '' && it.cost != null) lines.push('هزینه: ' + fmtCost(it.cost));
-    if(it.date) lines.push('تاریخ: ' + fmtDate(it.date));
-    if(it.desc) lines.push('\nتوضیحات:\n' + it.desc);
-    return lines.join('\n');
-  }
-
-  function shareItem(it){
-    var text = itemText(it);
-    if(navigator.share){
-      navigator.share({
-        title: it.name || 'آرشیو تعمیرات',
-        text: text,
-        url: window.location.href
-      }).catch(function(err){
-        if(err.name !== 'AbortError'){
-          copyToClipboard(text);
+      if(e.target.id === 'd-edit'){
+        var it = items.find(function(x){ return x.id === openId; });
+        if(it) openForm(it);
+      }
+      if(e.target.id === 'd-share'){
+        var it = items.find(function(x){ return x.id === openId; });
+        if(it){
+          var text = shareItemText(it);
+          if(navigator.share){
+            try{ await navigator.share({title:it.name, text:text}); return; }catch(err){}
+          }
+          navigator.clipboard.writeText(text).then(function(){ toast('متن جزئیات کپی شد'); }).catch(function(){ toast('امکان کپی نبود'); });
         }
-      });
-    } else {
-      copyToClipboard(text);
-    }
-  }
-
-  function copyToClipboard(text){
-    if(navigator.clipboard && navigator.clipboard.writeText){
-      navigator.clipboard.writeText(text).then(function(){
-        toast('متن و مشخصات در حافظه کپی شد');
-      }).catch(function(){
-        toast('امکان اشتراک‌گذاری یا کپی وجود ندارد');
-      });
-    } else {
-      toast('مرورگر شما پشتیبانی نمی‌کند');
-    }
-  }
-
-  $('share-all').onclick = function(){
-    var shown = items.filter(matches).sort(function(a,b){ return (b.date||'').localeCompare(a.date||'') || b.created - a.created; });
-    if(!shown.length){ toast('موردی برای اشتراک‌گذاری نیست'); return; }
-    var text = '📋 لیست آرشیو تعمیرات و پروژه‌ها:\n\n' + shown.map(function(it,i){
-      return (i+1) + '. ' + (it.name || 'بدون عنوان') + ' [' + STATUS[it.status] + ']' + (it.cust ? ' - مشتری: ' + it.cust : '');
-    }).join('\n');
-
-    if(navigator.share){
-      navigator.share({
-        title: 'آرشیو تعمیرات',
-        text: text,
-        url: window.location.href
-      }).catch(function(err){
-        if(err.name !== 'AbortError'){
-          copyToClipboard(text);
+      }
+      if(e.target.id === 'd-del'){
+        var btn = e.target;
+        if(!btn.classList.contains('armed')){
+          btn.classList.add('armed');
+          btn.textContent = 'برای تأیید حذف دوباره بزنید';
+          setTimeout(function(){ btn.classList.remove('armed'); btn.textContent = 'حذف'; }, 4000);
+          return;
         }
-      });
-    } else {
-      copyToClipboard(text);
-    }
-  };
-  function zoom(src){ $('lb-img').src = src; $('lb').hidden = false; }
-  $('lb').onclick = function(){ $('lb').hidden = true; };
-  document.addEventListener('keydown', function(e){
-    if(e.key === 'Escape'){ if(!$('lb').hidden) $('lb').hidden = true; else if(!$('form').hidden) closeForm(); else if(!$('detail').hidden) $('d-back').click(); }
+        if(await deleteItem(openId)){
+          items = items.filter(function(x){ return x.id !== openId; });
+          closeDetail(); renderList(); toast('مورد حذف شد');
+        }
+      }
+    };
+
+    // Lightbox close
+    $('lb').onclick = function(){ $('lb').hidden = true; };
   });
-
-  /* ---------- start ---------- */
-  (function(){ var saved=localStorage.getItem('repair_archive_theme'); if(saved==='dark'||saved==='light'){ document.documentElement.setAttribute('data-theme',saved); $('theme-toggle').textContent=saved==='dark'?'☀️':'🌙'; } })();
-  renderChips(); renderList();
-  initStorage().then(function(){ renderList(); }).catch(function(){ renderList(); });
-  if(navigator.storage&&navigator.storage.persist){ navigator.storage.persist().catch(function(){}); }
-})();
-</script>
-
-<script>
-(function(){
-  const b=document.getElementById('fullscreenBtn');
-  if(!b) return;
-  function isFull(){return !!(document.fullscreenElement || document.webkitFullscreenElement);}
-  async function enter(){
-    try{
-      if(isFull()) return;
-      const el=document.documentElement;
-      if(el.requestFullscreen) await el.requestFullscreen({navigationUI:'hide'});
-      else if(el.webkitRequestFullscreen) el.webkitRequestFullscreen();
-    }catch(e){}
-  }
-  function exit(){
-    try{
-      if(document.exitFullscreen) document.exitFullscreen();
-      else if(document.webkitExitFullscreen) document.webkitExitFullscreen();
-    }catch(e){}
-  }
-  b.addEventListener('click',function(){ isFull()?exit():enter(); });
-  document.addEventListener('fullscreenchange',()=>{b.textContent=isFull()?'×':'⛶';});
 })();
 </script>
 </body>
