@@ -4,13 +4,13 @@
   "display": "standalone",
   "name": "ارشیت",
   "orientation": "any",
-  "scope": "/",
+  "scope": "/repair-app/",
   "short_name": "ارشیت",
-  "start_url": "/",
+  "start_url": "/repair-app/",
   "theme_color": "#0f5b4a",
   "icons": [
     {
-      "src": "icon.png",
+      "src": "/repair-app/icon.png",
       "sizes": "512x512",
       "type": "image/png"
     }
