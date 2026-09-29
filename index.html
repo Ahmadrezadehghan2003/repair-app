@@ -235,7 +235,7 @@ body{background-image:radial-gradient(circle,var(--line) 1px,transparent 1.3px);
 (function(){
   var STATUS = {wait:'در انتظار', work:'در حال انجام', done:'تمام‌شده'};
   var KIND = {repair:'تعمیر', project:'پروژه'};
-  var items = [], memoryOnly = false, db = null;
+  var items = [];
   var filter = 'all', query = '';
   var editing = null, draft = null, openId = null;
 
@@ -261,52 +261,24 @@ body{background-image:radial-gradient(circle,var(--line) 1px,transparent 1.3px);
     clearTimeout(toast.t); toast.t = setTimeout(function(){ t.hidden = true; }, ms || 2200);
   }
 
-  /* ---------- storage ---------- */
-  function openDB(){
-    return new Promise(function(res, rej){
-      try{
-        var r = indexedDB.open('repair-archive', 1);
-        r.onupgradeneeded = function(){
-          if(!r.result.objectStoreNames.contains('items')){
-            r.result.createObjectStore('items', {keyPath:'id'});
-          }
-        };
-        r.onsuccess = function(){ res(r.result); };
-        r.onerror = function(){ rej(r.error); };
-      }catch(e){ rej(e); }
-    });
+  /* ---------- Stable Storage (localStorage) ---------- */
+  function loadItems(){
+    try {
+      var data = localStorage.getItem('repair_archive_items');
+      return data ? JSON.parse(data) : [];
+    } catch(e) {
+      return [];
+    }
   }
-  function dbAll(){
-    return new Promise(function(res, rej){
-      if(!db) { res([]); return; }
-      try {
-        var rq = db.transaction('items').objectStore('items').getAll();
-        rq.onsuccess = function(){ res(rq.result || []); };
-        rq.onerror = function(){ rej(rq.error); };
-      } catch(e) { res([]); }
-    });
-  }
-  function dbPut(item){
-    if(memoryOnly || !db) return Promise.resolve();
-    return new Promise(function(res, rej){
-      try {
-        var tx = db.transaction('items','readwrite');
-        tx.objectStore('items').put(item);
-        tx.oncomplete = res; 
-        tx.onerror = function(){ rej(tx.error); };
-      } catch(e) { rej(e); }
-    });
-  }
-  function dbDel(id){
-    if(memoryOnly || !db) return Promise.resolve();
-    return new Promise(function(res, rej){
-      try {
-        var tx = db.transaction('items','readwrite');
-        tx.objectStore('items').delete(id);
-        tx.oncomplete = res; 
-        tx.onerror = function(){ rej(tx.error); };
-      } catch(e) { rej(e); }
-    });
+
+  function saveItems(){
+    try {
+      localStorage.setItem('repair_archive_items', JSON.stringify(items));
+      return true;
+    } catch(e) {
+      toast('خطا: حافظه دستگاه پر شده است یا اجازه ذخیره‌سازی داده نمی‌شود.');
+      return false;
+    }
   }
 
   /* ---------- list ---------- */
@@ -432,13 +404,16 @@ body{background-image:radial-gradient(circle,var(--line) 1px,transparent 1.3px);
       cost: costRaw === '' ? '' : Number(costRaw),
       date: $('f-date').value
     };
-    dbPut(record).then(function(){
-      var i = items.findIndex(function(x){ return x.id === record.id; });
-      if(i >= 0) items[i] = record; else items.push(record);
-      closeForm(); renderList();
+    
+    var i = items.findIndex(function(x){ return x.id === record.id; });
+    if(i >= 0) items[i] = record; else items.push(record);
+
+    if(saveItems()){
+      closeForm(); 
+      renderList();
       if(openId === record.id) showDetail(record.id);
       toast('ذخیره شد');
-    }).catch(function(){ toast('ذخیره نشد. حافظه‌ی گوشی پر است یا مرورگر اجازه نمی‌دهد.'); });
+    }
   }
 
   /* ---------- detail ---------- */
@@ -601,57 +576,79 @@ body{background-image:radial-gradient(circle,var(--line) 1px,transparent 1.3px);
         return;
       }
       var id = openId;
-      dbDel(id).then(function(){
-        items = items.filter(function(x){ return x.id !== id; });
-        $('detail').hidden = true; openId = null; renderList(); toast('حذف شد');
-      });
+      items = items.filter(function(x){ return x.id !== id; });
+      if(saveItems()){
+        $('detail').hidden = true; 
+        openId = null; 
+        renderList(); 
+        toast('حذف شد');
+      }
     }
   };
   function itemText(it){
     var lines = [it.name || 'بدون عنوان'];
-    lines.push(KIND[it.kind] + ' - ' + STATUS[it.status]);
+    lines.push('وضعیت: ' + STATUS[it.status]);
+    if(it.kind) lines.push('نوع: ' + KIND[it.kind]);
     if(it.device) lines.push('دستگاه: ' + it.device);
     if(it.cust) lines.push('مشتری: ' + it.cust);
     if(it.phone) lines.push('تلفن: ' + it.phone);
     if(it.cost !== '' && it.cost != null) lines.push('هزینه: ' + fmtCost(it.cost));
     if(it.date) lines.push('تاریخ: ' + fmtDate(it.date));
-    if(it.desc) lines.push('', it.desc);
+    if(it.desc) lines.push('\nتوضیحات:\n' + it.desc);
     return lines.join('\n');
   }
-  function dataURLtoFile(du, name){
-    var m = /^data:(.*?);base64,(.*)$/.exec(du || ''); if(!m) return null;
-    var bin = atob(m[2]), arr = new Uint8Array(bin.length);
-    for(var i=0;i<bin.length;i++) arr[i] = bin.charCodeAt(i);
-    return new File([arr], name, {type: m[1]});
-  }
+
   function shareItem(it){
     var text = itemText(it);
-    var files = (it.photos || []).slice(0,4).map(function(p,i){ return dataURLtoFile(p, 'photo'+(i+1)+'.jpg'); }).filter(Boolean);
     if(navigator.share){
-      var payload = {title: it.name || 'آرشیو تعمیرات', text: text};
-      if(files.length && navigator.canShare && navigator.canShare({files: files})) payload.files = files;
-      navigator.share(payload).catch(function(){});
-    } else if(navigator.clipboard && navigator.clipboard.writeText){
-      navigator.clipboard.writeText(text).then(function(){ toast('متن کپی شد'); }).catch(function(){ toast('اشتراک‌گذاری در این مرورگر پشتیبانی نمی‌شود'); });
+      navigator.share({
+        title: it.name || 'آرشیو تعمیرات',
+        text: text,
+        url: window.location.href
+      }).catch(function(err){
+        if(err.name !== 'AbortError'){
+          copyToClipboard(text);
+        }
+      });
     } else {
-      toast('اشتراک‌گذاری در این مرورگر پشتیبانی نمی‌شود');
+      copyToClipboard(text);
     }
   }
+
+  function copyToClipboard(text){
+    if(navigator.clipboard && navigator.clipboard.writeText){
+      navigator.clipboard.writeText(text).then(function(){
+        toast('متن و مشخصات در حافظه کپی شد');
+      }).catch(function(){
+        toast('امکان اشتراک‌گذاری یا کپی وجود ندارد');
+      });
+    } else {
+      toast('مرورگر شما پشتیبانی نمی‌کند');
+    }
+  }
+
   $('d-share').onclick = function(){
     var it = items.find(function(x){ return x.id === openId; }); if(it) shareItem(it);
   };
   $('share-all').onclick = function(){
     var shown = items.filter(matches).sort(function(a,b){ return (b.date||'').localeCompare(a.date||'') || b.created - a.created; });
     if(!shown.length){ toast('موردی برای اشتراک‌گذاری نیست'); return; }
-    var text = 'آرشیو تعمیرات و پروژه‌ها\n\n' + shown.map(function(it,i){
-      return (i+1) + '. ' + (it.name || 'بدون عنوان') + ' - ' + STATUS[it.status] + (it.cust ? ' - ' + it.cust : '');
+    var text = '📋 لیست آرشیو تعمیرات و پروژه‌ها:\n\n' + shown.map(function(it,i){
+      return (i+1) + '. ' + (it.name || 'بدون عنوان') + ' [' + STATUS[it.status] + ']' + (it.cust ? ' - مشتری: ' + it.cust : '');
     }).join('\n');
+
     if(navigator.share){
-      navigator.share({title:'آرشیو تعمیرات', text: text}).catch(function(){});
-    } else if(navigator.clipboard && navigator.clipboard.writeText){
-      navigator.clipboard.writeText(text).then(function(){ toast('لیست کپی شد'); }).catch(function(){ toast('اشتراک‌گذاری در این مرورگر پشتیبانی نمی‌شود'); });
+      navigator.share({
+        title: 'آرشیو تعمیرات',
+        text: text,
+        url: window.location.href
+      }).catch(function(err){
+        if(err.name !== 'AbortError'){
+          copyToClipboard(text);
+        }
+      });
     } else {
-      toast('اشتراک‌گذاری در این مرورگر پشتیبانی نمی‌شود');
+      copyToClipboard(text);
     }
   };
   function zoom(src){ $('lb-img').src = src; $('lb').hidden = false; }
@@ -661,18 +658,10 @@ body{background-image:radial-gradient(circle,var(--line) 1px,transparent 1.3px);
   });
 
   /* ---------- start ---------- */
+  items = loadItems();
   renderChips();
-  openDB().then(function(d){ 
-    db = d; 
-    return dbAll(); 
-  }).then(function(all){
-    items = all; 
-    renderList();
-  }).catch(function(){
-    memoryOnly = true;
-    $('warn').innerHTML = '<div class="warn">ذخیره‌سازی مرورگر در دسترس نیست. اطلاعات فقط تا بستن این صفحه می‌ماند.</div>';
-    renderList();
-  });
+  renderList();
+
   if(navigator.storage && navigator.storage.persist){ try{ navigator.storage.persist(); }catch(e){} }
 })();
 </script>
