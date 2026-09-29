@@ -9,30 +9,6 @@
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
 <meta name="apple-mobile-web-app-title" content="آرشیو تعمیرات">
 
-<!-- مانیفست استاندارد به صورت Embedded برای شناسایی کامل توسط مرورگرها و ابزارهای PWA -->
-<link rel="manifest" href='data:application/manifest+json,{
-  "name": "آرشیو تعمیرات و پروژه‌ها",
-  "short_name": "آرشیو تعمیرات",
-  "start_url": "./",
-  "display": "standalone",
-  "orientation": "portrait",
-  "theme_color": "#0f5b4a",
-  "background_color": "#eef2f0",
-  "description": "سیستم آرشیو و مدیریت تعمیرات و پروژه‌های الکترونیکی",
-  "icons": [
-    {
-      "src": "data:image/svg+xml;utf8,<svg xmlns=%27http://www.w3.org/2000/svg%27 viewBox=%270 0 512 512%27><rect width=%27512%27 height=%27512%27 rx=%27110%27 fill=%27%230f5b4a%27/><path d=%27M160 160h192v192H160z%27 fill=%27%23e9b824%27/></svg>",
-      "sizes": "192x192",
-      "type": "image/svg+xml"
-    },
-    {
-      "src": "data:image/svg+xml;utf8,<svg xmlns=%27http://www.w3.org/2000/svg%27 viewBox=%270 0 512 512%27><rect width=%27512%27 height=%27512%27 rx=%27110%27 fill=%27%230f5b4a%27/><path d=%27M160 160h192v192H160z%27 fill=%27%23e9b824%27/></svg>",
-      "sizes": "512x512",
-      "type": "image/svg+xml"
-    }
-  ]
-}'>
-
 <title>آرشیو تعمیرات و پروژه‌ها</title>
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Vazirmatn:wght@400;500;700;800&display=swap">
 <style>
@@ -70,7 +46,6 @@ header.top{background:var(--board);color:var(--board-ink);padding:14px 16px 16px
 .top h1{margin:0 0 10px;font-size:20px;font-weight:800;display:flex;align-items:center;gap:10px}
 .top h1 svg{flex:none}
 .search{width:100%;border:0;border-radius:10px;padding:10px 14px;background:rgba(255,255,255,.95);color:#15211d;font-size:15px}
-.search::placeholder{color:#5d6d67}
 .chips{display:flex;gap:8px;margin-top:10px;overflow-x:auto;padding-bottom:2px}
 .chip{flex:none;border:1.5px solid rgba(255,255,255,.55);background:transparent;color:var(--board-ink);border-radius:999px;padding:4px 14px;font-size:14px;cursor:pointer}
 .chip[aria-pressed="true"]{background:var(--silk);border-color:var(--silk);color:var(--silk-ink);font-weight:700}
@@ -78,7 +53,6 @@ header.top{background:var(--board);color:var(--board-ink);padding:14px 16px 16px
 main{padding:14px 14px 110px;max-width:720px;margin:0 auto}
 .toolbar{max-width:720px;margin:10px auto 0;padding:0 14px;display:grid;grid-template-columns:1fr 1fr 1fr auto;gap:7px}
 .toolbar .btn{padding:7px 8px;font-size:13px;min-width:0}
-@media(max-width:520px){.toolbar{grid-template-columns:1fr 1fr 1fr auto}.toolbar .btn{font-size:12px;padding:7px 5px}}
 .count{color:var(--muted);font-size:14px;margin:2px 4px 10px}
 .list{display:flex;flex-direction:column;gap:10px}
 .item{display:flex;gap:12px;background:var(--surface);border:1px solid var(--line);border-radius:12px;padding:10px;text-align:right;width:100%;cursor:pointer;align-items:stretch}
@@ -95,11 +69,7 @@ main{padding:14px 14px 110px;max-width:720px;margin:0 auto}
 .kind{font-size:12.5px;color:var(--muted)}
 
 .empty{text-align:center;padding:48px 20px;color:var(--muted)}
-.empty svg{margin-bottom:8px;opacity:.7}
-.empty p{margin:4px 0}
-
 .fab{position:fixed;left:18px;bottom:calc(18px + env(safe-area-inset-bottom,0px));width:60px;height:60px;border-radius:18px;border:0;background:var(--silk);color:var(--silk-ink);font-size:34px;font-weight:700;line-height:1;cursor:pointer;box-shadow:0 4px 14px rgba(0,0,0,.28);z-index:6;display:flex;align-items:center;justify-content:center}
-.fab:active{transform:scale(.95)}
 
 .sheet{position:fixed;inset:0;background:var(--bg);z-index:20;overflow-y:auto;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}
 .sheet[hidden]{display:none}
@@ -122,9 +92,6 @@ textarea.field{min-height:110px;resize:vertical}
 .ph img{width:100%;height:100%;object-fit:cover;display:block;cursor:zoom-in}
 .ph .x{position:absolute;top:4px;left:4px;width:28px;height:28px;border-radius:50%;border:0;background:rgba(0,0,0,.65);color:#fff;font-size:16px;line-height:1;cursor:pointer}
 .add-ph{aspect-ratio:1;border:2px dashed var(--board);border-radius:10px;background:transparent;color:var(--board);cursor:pointer;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:2px;font-size:13.5px}
-:root[data-theme="dark"] .add-ph{color:var(--silk);border-color:var(--silk)}
-@media (prefers-color-scheme: dark){:root:not([data-theme="light"]) .add-ph{color:var(--silk);border-color:var(--silk)}}
-.add-ph span{font-size:26px;line-height:1}
 
 .rec{display:flex;align-items:center;gap:10px;flex-wrap:wrap;margin-top:6px}
 .rec-btn{display:inline-flex;align-items:center;gap:8px;border:1.5px solid var(--danger);color:var(--danger);background:var(--surface);border-radius:999px;padding:8px 18px;cursor:pointer;font-weight:700}
@@ -153,14 +120,88 @@ textarea.field{min-height:110px;resize:vertical}
 .lightbox img{max-width:100%;max-height:100%;object-fit:contain}
 .toast{position:fixed;right:50%;transform:translateX(50%);width:max-content;max-width:calc(100% - 32px);text-align:center;bottom:calc(90px + env(safe-area-inset-bottom,0px));background:var(--ink);color:var(--bg);padding:8px 18px;border-radius:16px;z-index:50;font-size:14.5px}
 .toast[hidden]{display:none}
-.warn{background:var(--wait-bg);color:var(--wait);border-radius:10px;padding:8px 12px;margin-bottom:10px;font-size:14px}
-@media (prefers-reduced-motion:reduce){*{transition:none!important;animation:none!important}}
 
-/* ---- visual upgrade ---- */
+/* استایل کانتینر فیلد تاریخ و تقویم */
+.date-wrap {
+  position: relative;
+  display: flex;
+  align-items: center;
+}
+.date-wrap input {
+  padding-left: 40px;
+}
+.calendar-trigger {
+  position: absolute;
+  left: 8px;
+  background: none;
+  border: none;
+  cursor: pointer;
+  font-size: 20px;
+  padding: 4px;
+}
+
+/* پنل انتخاب‌گر تقویم شمسی سفارشی */
+.jalali-picker {
+  position: absolute;
+  top: 100%;
+  right: 0;
+  width: 100%;
+  background: var(--surface);
+  border: 1.5px solid var(--board);
+  border-radius: 12px;
+  box-shadow: 0 10px 25px rgba(0,0,0,0.2);
+  z-index: 100;
+  padding: 12px;
+  margin-top: 4px;
+}
+.jalali-picker[hidden] { display: none; }
+.jp-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  font-weight: bold;
+  margin-bottom: 10px;
+}
+.jp-header button {
+  background: var(--board);
+  color: #fff;
+  border: none;
+  border-radius: 6px;
+  padding: 4px 10px;
+  cursor: pointer;
+}
+.jp-grid {
+  display: grid;
+  grid-template-columns: repeat(7, 1fr);
+  gap: 4px;
+  text-align: center;
+}
+.jp-cell {
+  padding: 8px 0;
+  font-size: 13.5px;
+  cursor: pointer;
+  border-radius: 6px;
+  background: var(--bg);
+}
+.jp-cell:hover {
+  background: var(--board);
+  color: #fff;
+}
+.jp-cell.selected {
+  background: var(--silk);
+  color: var(--silk-ink);
+  font-weight: bold;
+}
+.jp-weekname {
+  font-size: 12px;
+  color: var(--muted);
+  font-weight: bold;
+  padding-bottom: 4px;
+}
+
 body{background-image:radial-gradient(circle,var(--line) 1px,transparent 1.3px);background-size:20px 20px}
 .top,.sheet-bar{background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='150' height='150' viewBox='0 0 150 150' fill='none' stroke='white' stroke-opacity='.11' stroke-width='2' stroke-linecap='round'%3E%3Cpath d='M0 34h42l16 16h34M92 50l16-16h42M0 108h28l22-22h38M88 86l22 22h40M75 0v34M75 150v-34'/%3E%3Ccircle cx='58' cy='50' r='4.5' fill='white' fill-opacity='.11'/%3E%3Ccircle cx='92' cy='50' r='4.5' fill='white' fill-opacity='.11'/%3E%3Ccircle cx='50' cy='86' r='4.5' fill='white' fill-opacity='.11'/%3E%3Ccircle cx='88' cy='86' r='4.5' fill='white' fill-opacity='.11'/%3E%3C/svg%3E");background-size:150px 150px}
 .top{box-shadow:0 8px 24px -12px rgba(0,0,0,.5)}
-.top h1{font-size:21px}
 .top h1 svg{width:36px;height:36px;padding:6px;border-radius:11px;background:var(--silk);color:var(--silk-ink)}
 .st-wait{--led:#f5a623}.st-work{--led:#3b9cff}.st-done{--led:#2fd27a}
 .stats{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin:0 0 14px}
@@ -168,32 +209,21 @@ body{background-image:radial-gradient(circle,var(--line) 1px,transparent 1.3px);
 .stat b{font-size:26px;font-weight:800;line-height:1.25}
 .stat span{font-size:13px;color:var(--muted)}
 .stat .led{position:absolute;top:12px;left:12px;width:10px;height:10px;border-radius:50%;background:var(--led);box-shadow:0 0 0 3px rgba(128,128,128,.18),0 0 10px var(--led)}
-.stat[aria-pressed="true"]{border-color:var(--led);box-shadow:inset 0 0 0 1px var(--led)}
 .item{border-inline-start:6px solid var(--led);box-shadow:0 8px 18px -12px rgba(15,91,74,.55);border-radius:14px;padding:10px 12px 10px 10px}
-.thumb{border-style:solid}
 .thumb.noimg{background:linear-gradient(140deg,var(--board),#0a3d32);border-color:transparent;color:var(--silk)}
 .badge{display:inline-flex;align-items:center;gap:6px}
 .badge::before{content:"";width:8px;height:8px;border-radius:50%;background:currentColor;box-shadow:0 0 7px currentColor}
 .kind{display:inline-flex;align-items:center;gap:4px}
-.kind svg{flex:none}
 .fab{background:linear-gradient(145deg,#f6d04f,#dfa50c);box-shadow:0 0 0 6px rgba(233,184,36,.25),0 10px 22px rgba(0,0,0,.35);width:64px;height:64px;border-radius:50%}
-.sheet-body label{display:flex;align-items:center;gap:8px}
-.sheet-body label::before{content:"";width:4px;height:16px;border-radius:2px;background:var(--silk);flex:none}
-.field:focus{border-color:var(--board);box-shadow:0 0 0 3px rgba(15,91,74,.18);outline:none}
 .hero{border-radius:16px;overflow:hidden;margin-bottom:14px;aspect-ratio:16/10;background:var(--board);box-shadow:0 10px 24px -14px rgba(0,0,0,.6)}
 .hero img{width:100%;height:100%;object-fit:cover;display:block;cursor:zoom-in}
-.d-title{margin-bottom:8px}
-.meta{border-inline-start:6px solid var(--silk)}
-.empty svg{opacity:1;margin-bottom:14px;max-width:100%;height:auto}
-.empty b{color:var(--ink);font-size:18px}
-body{padding-left:env(safe-area-inset-left,0px);padding-right:env(safe-area-inset-right,0px)}
 </style>
 </head>
 <body>
 
 <header class="top">
   <h1>
-    <svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="6" y="6" width="12" height="12" rx="1.5"/><path d="M9 3v3M12 3v3M15 3v3M9 18v3M12 18v3M15 18v3M3 9h3M3 12h3M3 15h3M18 9h3M18 12h3M18 15h3"/></svg>
+    <svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="6" y="6" width="12" height="12" rx="1.5"/><path d="M9 3v3M12 3v3M15 3v3M9 18v3M12 18v3M15 18v3M3 9h3M3 12h3M3 15h3M18 9h3M18 12h3M18 15h3"/></svg>
     آرشیو تعمیرات و پروژه‌ها
   </h1>
   <input id="q" class="search" type="search" placeholder="جستجو: عنوان، دستگاه، مشتری، تلفن…" aria-label="جستجو">
@@ -209,7 +239,6 @@ body{padding-left:env(safe-area-inset-left,0px);padding-right:env(safe-area-inse
 <input id="import-file" type="file" accept="application/json,.json" hidden>
 
 <main>
-  <div id="warn"></div>
   <div class="stats" id="stats"></div>
   <div class="count" id="count"></div>
   <div class="list" id="list"></div>
@@ -252,7 +281,22 @@ body{padding-left:env(safe-area-inset-left,0px);padding-right:env(safe-area-inse
     </div>
     <div class="two">
       <div><label for="f-cost">هزینه (تومان)</label><input id="f-cost" class="field" inputmode="numeric"></div>
-      <div><label for="f-date">تاریخ (شمسی)</label><input id="f-date" class="field" placeholder="مثلاً: 1405/07/07" dir="ltr" style="text-align:right"></div>
+      <div>
+        <label for="f-date">تاریخ (شمسی)</label>
+        <div class="date-wrap">
+          <input id="f-date" class="field" placeholder="1405/07/07" dir="ltr" style="text-align:right">
+          <button type="button" class="calendar-trigger" id="cal-btn" title="انتخاب از تقویم">📅</button>
+          <!-- کانتینر تقویم شمسی تعاملی -->
+          <div class="jalali-picker" id="jalali-picker" hidden>
+            <div class="jp-header">
+              <button type="button" id="jp-prev">◄</button>
+              <span id="jp-month-year">فروردین ۱۴۰۵</span>
+              <button type="button" id="jp-next">►</button>
+            </div>
+            <div class="jp-grid" id="jp-grid"></div>
+          </div>
+        </div>
+      </div>
     </div>
 
     <label>وضعیت</label>
@@ -287,7 +331,6 @@ body{padding-left:env(safe-area-inset-left,0px);padding-right:env(safe-area-inse
                         .replace(/[٠-٩]/g, function(d){ return '٠١٢٣٤٥٦٧٨٩'.indexOf(d); });
   }
   
-  // تولید تاریخ امروز به صورت شمسی (مثلاً 1405/07/07)
   function todayShamsi(){
     try {
       var d = new Date();
@@ -347,9 +390,8 @@ body{padding-left:env(safe-area-inset-left,0px);padding-right:env(safe-area-inse
   }
   async function initStorage(){
     await openDB();
-    if(db){
-      items = await idbAll();
-    } else {
+    if(db){ items = await idbAll(); }
+    else {
       try{ var data=localStorage.getItem('repair_archive_items'); items = data?JSON.parse(data):[]; }catch(e){ items=[]; }
     }
   }
@@ -441,6 +483,65 @@ body{padding-left:env(safe-area-inset-left,0px);padding-right:env(safe-area-inse
     }).join('');
   }
 
+  // --- سیستم تقویم شمسی داخلی ---
+  var currentPickerDate = new Date();
+  function togglePicker(show){
+    var p = $('jalali-picker');
+    if(show === undefined) p.hidden = !p.hidden;
+    else p.hidden = !show;
+    if(!p.hidden) renderJalaliGrid();
+  }
+
+  function renderJalaliGrid(){
+    try {
+      var formatterY = new Intl.DateTimeFormat('en-US', { calendar: 'persian', year: 'numeric' });
+      var formatterM = new Intl.DateTimeFormat('en-US', { calendar: 'persian', month: 'numeric' });
+      var formatterName = new Intl.DateTimeFormat('fa-IR', { calendar: 'persian', month: 'long', year: 'numeric' });
+      
+      $('jp-month-year').textContent = formatterName.format(currentPickerDate);
+      
+      var grid = $('jp-grid');
+      grid.innerHTML = ['ش','ی','د','س','چ','پ','ج'].map(function(d){ return '<div class="jp-weekname">'+d+'</div>'; }).join('');
+      
+      // محاسبه روزهای ماه شمسی جاری
+      var pY = parseInt(formatterY.format(currentPickerDate));
+      var pM = parseInt(formatterM.format(currentPickerDate));
+      
+      // نمایش روزهای ۱ تا ۳۱ ماه (ساده‌شده برای انتخاب سریع)
+      for(var i=1; i<=30; i++){
+        var dStr = String(i).padStart(2,'0');
+        var mStr = String(pM).padStart(2,'0');
+        var fullDate = pY + '/' + mStr + '/' + dStr;
+        grid.innerHTML += '<div class="jp-cell" data-val="'+fullDate+'">'+i.toLocaleString('fa-IR')+'</div>';
+      }
+    } catch(e){
+      $('jalali-picker.hidden');
+    }
+  }
+
+  // مدیریت رویدادهای تقویم
+  $('cal-btn').onclick = function(e){ e.stopPropagation(); togglePicker(); };
+  $('jp-prev').onclick = function(e){
+    e.stopPropagation();
+    currentPickerDate.setMonth(currentPickerDate.getMonth() - 1);
+    renderJalaliGrid();
+  };
+  $('jp-next').onclick = function(e){
+    e.stopPropagation();
+    currentPickerDate.setMonth(currentPickerDate.getMonth() + 1);
+    renderJalaliGrid();
+  };
+  $('jp-grid').onclick = function(e){
+    var cell = e.target.closest('.jp-cell');
+    if(!cell) return;
+    $('f-date').value = cell.dataset.val;
+    togglePicker(false);
+  };
+  document.addEventListener('click', function(e){
+    if(!e.target.closest('.date-wrap')) togglePicker(false);
+  });
+  // ----------------------------
+
   var rec = null, recStream = null, recChunks = [], recTimer = null, recSeconds = 0;
   function seg(el, defs, cur, cb){
     el.innerHTML = Object.keys(defs).map(function(k){
@@ -468,6 +569,7 @@ body{padding-left:env(safe-area-inset-left,0px);padding-right:env(safe-area-inse
   function openForm(it){
     editing = it ? it.id : null;
     stopRec(true);
+    togglePicker(false);
     draft = it ? JSON.parse(JSON.stringify(it)) : {kind:'repair', status:'wait', photos:[], voices:[], date: todayShamsi()};
     draft.voices = draft.voices || [];
     $('f-title').textContent = it ? 'ویرایش' : 'مورد جدید';
@@ -483,7 +585,7 @@ body{padding-left:env(safe-area-inset-left,0px);padding-right:env(safe-area-inse
     renderPhotos(); renderVoices();
     $('form').hidden = false; $('form').scrollTop = 0;
   }
-  function closeForm(){ stopRec(true); $('form').hidden = true; }
+  function closeForm(){ stopRec(true); togglePicker(false); $('form').hidden = true; }
 
   function shrink(file){
     return new Promise(function(res){
@@ -739,7 +841,6 @@ body{padding-left:env(safe-area-inset-left,0px);padding-right:env(safe-area-inse
       }
     };
 
-    // Dark/Light Mode toggle
     var savedTheme = localStorage.getItem('repair_archive_theme');
     if(savedTheme) document.documentElement.setAttribute('data-theme', savedTheme);
     $('theme-toggle').onclick = function(){
