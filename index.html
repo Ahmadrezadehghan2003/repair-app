@@ -8,7 +8,30 @@
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
 <meta name="apple-mobile-web-app-title" content="آرشیو تعمیرات">
-<link rel="manifest" href="data:application/manifest+json,%7B%22name%22%3A%22%D8%A2%D8%B1%D8%B4%DB%8C%DB%8C%20%D8%AA%D8%B9%D9%85%DB%8C%D8%B1%D8%A7%D8%AA%22%2C%22short_name%22%3A%22%D8%A2%D8%B1%D8%B4%DB%8C%DB%8C%22%2C%22start_url%22%3A%22.%22%2C%22display%22%3A%22standalone%22%2C%22orientation%22%3A%22portrait%22%2C%22theme_color%22%3A%22%230f5b4a%22%2C%22background_color%22%3A%22%23eef2f0%22%2C%22icons%22%3A%5B%7B%22src%22%3A%22data%3Aimage%2Fsvg%2Bxml%3Butf8%2C%3Csvg%20xmlns%3D%27http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%27%20viewBox%3D%270%200%20512%20512%27%3E%3Crect%20width%3D%27512%27%20height%3D%27512%27%20rx%3D%27110%27%20fill%3D%27%230f5b4a%27%2F%3E%3Cpath%20d%3D%27M160%20160h192v192H160z%27%20fill%3D%27%23e9b824%27%2F%3E%3C%2Fsvg%3E%22%2C%22sizes%22%3A%22512x512%22%2C%22type%22%3A%22image%2Fsvg%2Bxml%22%7D%5D%7D">
+
+<!-- مانیفست استاندارد به صورت Embedded برای شناسایی کامل توسط مرورگرها و ابزارهای PWA -->
+<link rel="manifest" href='data:application/manifest+json,{
+  "name": "آرشیو تعمیرات و پروژه‌ها",
+  "short_name": "آرشیو تعمیرات",
+  "start_url": "./",
+  "display": "standalone",
+  "orientation": "portrait",
+  "theme_color": "#0f5b4a",
+  "background_color": "#eef2f0",
+  "description": "سیستم آرشیو و مدیریت تعمیرات و پروژه‌های الکترونیکی",
+  "icons": [
+    {
+      "src": "data:image/svg+xml;utf8,<svg xmlns=%27http://www.w3.org/2000/svg%27 viewBox=%270 0 512 512%27><rect width=%27512%27 height=%27512%27 rx=%27110%27 fill=%27%230f5b4a%27/><path d=%27M160 160h192v192H160z%27 fill=%27%23e9b824%27/></svg>",
+      "sizes": "192x192",
+      "type": "image/svg+xml"
+    },
+    {
+      "src": "data:image/svg+xml;utf8,<svg xmlns=%27http://www.w3.org/2000/svg%27 viewBox=%270 0 512 512%27><rect width=%27512%27 height=%27512%27 rx=%27110%27 fill=%27%230f5b4a%27/><path d=%27M160 160h192v192H160z%27 fill=%27%23e9b824%27/></svg>",
+      "sizes": "512x512",
+      "type": "image/svg+xml"
+    }
+  ]
+}'>
 
 <title>آرشیو تعمیرات و پروژه‌ها</title>
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Vazirmatn:wght@400;500;700;800&display=swap">
@@ -229,7 +252,7 @@ body{padding-left:env(safe-area-inset-left,0px);padding-right:env(safe-area-inse
     </div>
     <div class="two">
       <div><label for="f-cost">هزینه (تومان)</label><input id="f-cost" class="field" inputmode="numeric"></div>
-      <div><label for="f-date">تاریخ (شمسی)</label><input id="f-date" class="field" type="date"></div>
+      <div><label for="f-date">تاریخ (شمسی)</label><input id="f-date" class="field" placeholder="مثلاً: 1405/07/07" dir="ltr" style="text-align:right"></div>
     </div>
 
     <label>وضعیت</label>
@@ -263,16 +286,19 @@ body{padding-left:env(safe-area-inset-left,0px);padding-right:env(safe-area-inse
     return String(s||'').replace(/[۰-۹]/g, function(d){ return '۰۱۲۳۴۵۶۷۸۹'.indexOf(d); })
                         .replace(/[٠-٩]/g, function(d){ return '٠١٢٣٤٥٦٧٨٩'.indexOf(d); });
   }
-  function today(){ var d = new Date(); return d.getFullYear() + '-' + String(d.getMonth()+1).padStart(2,'0') + '-' + String(d.getDate()).padStart(2,'0'); }
   
-  // تبدیل تاریخ به شمسی با امکانات بومی مرورگر (بدون نیاز به کتابخانه خارجی سنگین)
-  function fmtDate(iso){
-    if(!iso) return '';
+  // تولید تاریخ امروز به صورت شمسی (مثلاً 1405/07/07)
+  function todayShamsi(){
     try {
-      var d = new Date(iso + 'T12:00:00');
-      if(isNaN(d.getTime())) return iso;
-      return new Intl.DateTimeFormat('fa-IR', { calendar: 'persian', year: 'numeric', month: 'long', day: 'numeric' }).format(d);
-    } catch(e){ return iso; }
+      var d = new Date();
+      var parts = new Intl.DateTimeFormat('fa-IR', { calendar: 'persian', year: 'numeric', month: '2-digit', day: '2-digit' }).formatToParts(d);
+      var y = parts.find(p => p.type === 'year').value;
+      var m = parts.find(p => p.type === 'month').value;
+      var day = parts.find(p => p.type === 'day').value;
+      return latin(y) + '/' + latin(m) + '/' + latin(day);
+    } catch(e){
+      return '1405/01/01';
+    }
   }
 
   function fmtCost(n){
@@ -351,7 +377,7 @@ body{padding-left:env(safe-area-inset-left,0px);padding-right:env(safe-area-inse
     var all=db?await idbAll():items.slice();
     if(!all.length){toast('موردی برای پشتیبان‌گیری وجود ندارد');return;}
     var payload={app:'آرشیو تعمیرات و پروژه‌ها',version:2,exportedAt:new Date().toISOString(),items:all};
-    downloadText('backup-repair-archive-'+today()+'.json',JSON.stringify(payload));
+    downloadText('backup-repair-archive-'+todayShamsi().replace(/\//g,'-')+'.json',JSON.stringify(payload));
     toast('فایل پشتیبان ساخته شد');
   }
   async function importData(file){
@@ -409,7 +435,7 @@ body{padding-left:env(safe-area-inset-left,0px);padding-right:env(safe-area-inse
       return '<button class="item st-'+it.status+'" data-id="'+it.id+'"><div class="thumb'+(it.photos && it.photos[0] ? '' : ' noimg')+'">'+th+'</div><div class="info"><b>'+esc(it.name || 'بدون عنوان')+'</b>'
         + (sub ? '<span>'+esc(sub)+'</span>' : '')
         + '<div class="row"><span class="badge s-'+it.status+'">'+STATUS[it.status]+'</span><span class="kind">'+ICO[it.kind]+KIND[it.kind]+'</span>'
-        + (it.date ? '<span class="kind">'+fmtDate(it.date)+'</span>' : '')
+        + (it.date ? '<span class="kind">'+esc(it.date)+'</span>' : '')
         + (it.cost !== '' && it.cost != null ? '<span class="kind">'+fmtCost(it.cost)+'</span>' : '')
         + '</div></div></button>';
     }).join('');
@@ -442,7 +468,7 @@ body{padding-left:env(safe-area-inset-left,0px);padding-right:env(safe-area-inse
   function openForm(it){
     editing = it ? it.id : null;
     stopRec(true);
-    draft = it ? JSON.parse(JSON.stringify(it)) : {kind:'repair', status:'wait', photos:[], voices:[], date: today()};
+    draft = it ? JSON.parse(JSON.stringify(it)) : {kind:'repair', status:'wait', photos:[], voices:[], date: todayShamsi()};
     draft.voices = draft.voices || [];
     $('f-title').textContent = it ? 'ویرایش' : 'مورد جدید';
     seg($('f-kind'), KIND, draft.kind, function(k){ draft.kind = k; });
@@ -453,7 +479,7 @@ body{padding-left:env(safe-area-inset-left,0px);padding-right:env(safe-area-inse
     $('f-cust').value = draft.cust || '';
     $('f-phone').value = draft.phone || '';
     $('f-cost').value = draft.cost === '' || draft.cost == null ? '' : draft.cost;
-    $('f-date').value = draft.date || today();
+    $('f-date').value = draft.date || todayShamsi();
     renderPhotos(); renderVoices();
     $('form').hidden = false; $('form').scrollTop = 0;
   }
@@ -495,7 +521,7 @@ body{padding-left:env(safe-area-inset-left,0px);padding-right:env(safe-area-inse
       cust: $('f-cust').value.trim(),
       phone: latin($('f-phone').value).trim(),
       cost: costRaw === '' ? '' : Number(costRaw),
-      date: $('f-date').value
+      date: $('f-date').value.trim() || todayShamsi()
     };
     if(!(await saveItem(record))) return;
     var i = items.findIndex(function(x){ return x.id === record.id; });
@@ -550,75 +576,34 @@ body{padding-left:env(safe-area-inset-left,0px);padding-right:env(safe-area-inse
   function showDetail(it){
     openId = it.id;
     var phs = (it.photos || []).map(function(p, i){
-      return '<div class="hero"><img alt="" src="'+p+'" data-zoom-detail="'+i+'"></div>';
+      return '<div class="hero"><img alt="" src="'+p+'" data-zoom-hero="'+i+'"></div>';
     }).join('');
     var vcs = (it.voices || []).map(function(v){
       return '<div class="vc"><audio controls src="'+v+'"></audio></div>';
     }).join('');
-    var meta = '<dl class="meta">'
-      + '<dt>نوع</dt><dd>'+KIND[it.kind]+'</dd>'
-      + '<dt>وضعیت</dt><dd>'+STATUS[it.status]+'</dd>'
+    $('d-body').innerHTML = phs
+      + '<h2 class="d-title">'+esc(it.name)+'</h2>'
+      + '<div class="row" style="margin-bottom:12px"><span class="badge s-'+it.status+'">'+STATUS[it.status]+'</span><span class="kind">'+ICO[it.kind]+KIND[it.kind]+'</span></div>'
+      + '<dl class="meta">'
       + (it.device ? '<dt>دستگاه</dt><dd>'+esc(it.device)+'</dd>' : '')
       + (it.cust ? '<dt>مشتری</dt><dd>'+esc(it.cust)+'</dd>' : '')
       + (it.phone ? '<dt>تلفن</dt><dd><a href="tel:'+esc(it.phone)+'" dir="ltr" style="display:inline-block">'+esc(it.phone)+'</a></dd>' : '')
-      + (it.date ? '<dt>تاریخ</dt><dd>'+fmtDate(it.date)+'</dd>' : '')
       + (it.cost !== '' && it.cost != null ? '<dt>هزینه</dt><dd>'+fmtCost(it.cost)+'</dd>' : '')
-      + '</dl>';
-
-    $('d-body').innerHTML = phs
-      + '<h1 class="d-title">'+esc(it.name)+'</h1>'
-      + meta
+      + (it.date ? '<dt>تاریخ</dt><dd>'+esc(it.date)+'</dd>' : '')
+      + '</dl>'
       + (it.desc ? '<div class="notes">'+esc(it.desc)+'</div>' : '')
-      + (vcs ? '<label>یادداشت‌های صوتی</label><div class="voices">'+vcs+'</div>' : '')
-      + '<div class="actions">'
-      + '<button class="btn" id="d-edit">ویرایش</button>'
-      + '<button class="btn" id="d-share">اشتراک‌گذاری</button>'
-      + '<button class="btn danger" id="d-del">حذف</button>'
-      + '</div>';
+      + (vcs ? '<div class="voices">'+vcs+'</div>' : '')
+      + '<div class="actions"><button class="btn" id="d-edit">ویرایش</button><button class="btn danger" id="d-del">حذف</button></div>';
+
     $('detail').hidden = false; $('detail').scrollTop = 0;
   }
-  function closeDetail(){ $('detail').hidden = true; openId = null; }
+  function closeDetail(){ openId = null; $('detail').hidden = true; }
 
-  function shareItemText(it){
-    return [
-      '📌 ' + (it.name || ''),
-      it.device ? 'دستگاه: ' + it.device : '',
-      it.cust ? 'مشتری: ' + it.cust : '',
-      it.phone ? 'تلفن: ' + it.phone : '',
-      'وضعیت: ' + STATUS[it.status],
-      it.date ? 'تاریخ: ' + fmtDate(it.date) : '',
-      it.cost !== '' && it.cost != null ? 'هزینه: ' + fmtCost(it.cost) : '',
-      it.desc ? '\nتوضیحات:\n' + it.desc : ''
-    ].filter(Boolean).join('\n');
-  }
-
-  function shareListText(){
-    var shown = items.filter(matches);
-    return '📋 لیست آرشیو تعمیرات (' + shown.length.toLocaleString('fa-IR') + ' مورد):\n\n' + shown.map(function(it, idx){
-      return (idx+1) + '. ' + (it.name || '') + (it.device ? ' ('+it.device+')' : '') + ' - ' + STATUS[it.status];
-    }).join('\n');
-  }
-
-  document.addEventListener('DOMContentLoaded', async function(){
+  // Event Listeners
+  window.addEventListener('DOMContentLoaded', async function(){
     await initStorage();
     renderChips();
     renderList();
-
-    var darkPref = window.matchMedia('(prefers-color-scheme: dark)');
-    function updateThemeBtn(){
-      var cur = document.documentElement.getAttribute('data-theme');
-      var isDark = cur === 'dark' || (!cur && darkPref.matches);
-      $('theme-toggle').textContent = isDark ? '☀️' : '🌙';
-    }
-    updateThemeBtn();
-    $('theme-toggle').onclick = function(){
-      var cur = document.documentElement.getAttribute('data-theme');
-      var isDark = cur === 'dark' || (!cur && darkPref.matches);
-      var next = isDark ? 'light' : 'dark';
-      document.documentElement.setAttribute('data-theme', next);
-      try{ localStorage.setItem('repair_archive_theme', next); }catch(e){}
-      updateThemeBtn();
-    };
 
     $('q').oninput = function(e){ query = e.target.value; renderList(); };
     $('chips').onclick = function(e){
@@ -633,97 +618,138 @@ body{padding-left:env(safe-area-inset-left,0px);padding-right:env(safe-area-inse
       renderChips(); renderList();
     };
 
-    $('list').onclick = function(e){
-      var itemEl = e.target.closest('.item'); if(!itemEl) return;
-      var it = items.find(function(x){ return x.id === itemEl.dataset.id; });
-      if(it) showDetail(it);
-    };
-
     $('add').onclick = function(){ openForm(null); };
-    $('export-data').onclick = exportData;
-    $('import-data').onclick = function(){ $('import-file').click(); };
-    $('import-file').onchange = function(e){ if(e.target.files[0]) importData(e.target.files[0]); e.target.value = ''; };
-    $('share-all').onclick = async function(){
-      var text = shareListText();
-      if(navigator.share){ try{ await navigator.share({title:'آرشیو تعمیرات', text:text}); return; }catch(e){} }
-      navigator.clipboard.writeText(text).then(function(){ toast('لیست در کلیپ‌بورد کپی شد'); });
-    };
-
     $('f-cancel').onclick = closeForm;
     $('f-save').onclick = save;
 
-    $('f-photos').onclick = async function(e){
-      var rm = e.target.dataset.rm;
-      if(rm != null){ draft.photos.splice(Number(rm), 1); renderPhotos(); return; }
-      var zoom = e.target.dataset.zoom;
-      if(zoom != null){ $('lb-img').src = draft.photos[Number(zoom)]; $('lb').hidden = false; return; }
-      if(e.target.closest('#add-cam')) $('f-cam').click();
-      if(e.target.closest('#add-ph')) $('f-file').click();
+    $('add-cam') && ($('add-cam').onclick = function(){ $('f-cam').click(); });
+    $('add-ph') && ($('add-ph').onclick = function(){ $('f-file').click(); });
+
+    $('f-file').onchange = async function(e){
+      for(var file of e.target.files){
+        var url = await shrink(file);
+        if(url) draft.photos.push(url);
+      }
+      e.target.value = '';
+      renderPhotos();
     };
     $('f-cam').onchange = async function(e){
-      var files = e.target.files;
-      if(files && files[0]){ var b64 = await shrink(files[0]); if(b64) draft.photos.push(b64); renderPhotos(); }
-      e.target.value = '';
-    };
-    $('f-file').onchange = async function(e){
-      var files = e.target.files;
-      if(files){
-        for(var i=0; i<files.length; i++){ var b64 = await shrink(files[i]); if(b64) draft.photos.push(b64); }
-        renderPhotos();
+      for(var file of e.target.files){
+        var url = await shrink(file);
+        if(url) draft.photos.push(url);
       }
+      e.target.value = '';
+      renderPhotos();
+    };
+
+    $('f-photos').onclick = function(e){
+      var rm = e.target.dataset.rm;
+      if(rm != null){
+        draft.photos.splice(Number(rm), 1);
+        renderPhotos();
+        return;
+      }
+      var zoom = e.target.dataset.zoom;
+      if(zoom != null){
+        $('lb-img').src = draft.photos[Number(zoom)];
+        $('lb').hidden = false;
+      }
+    };
+
+    $('rec-btn').onclick = function(){
+      if(rec) stopRec(false); else startRec();
+    };
+    $('rec-app').onclick = function(){ $('f-aud').click(); };
+    $('f-aud').onchange = async function(e){
+      var file = e.target.files[0];
+      if(!file) return;
+      var fr = new FileReader();
+      fr.onload = function(){
+        draft.voices = (draft.voices || []).concat([fr.result]);
+        renderVoices();
+      };
+      fr.readAsDataURL(file);
       e.target.value = '';
     };
 
-    $('rec-btn').onclick = function(){ if(rec) stopRec(false); else startRec(); };
-    $('rec-app').onclick = function(){ $('f-aud').click(); };
-    $('f-aud').onchange = function(e){
-      var f = e.target.files[0];
-      if(f){
-        var fr = new FileReader();
-        fr.onload = function(){ draft.voices = (draft.voices || []).concat([fr.result]); renderVoices(); };
-        fr.readAsDataURL(f);
-      }
-      e.target.value = '';
-    };
     $('f-voices').onclick = function(e){
       var rmv = e.target.dataset.rmv;
-      if(rmv != null){ draft.voices.splice(Number(rmv), 1); renderVoices(); }
+      if(rmv != null){
+        draft.voices.splice(Number(rmv), 1);
+        renderVoices();
+      }
+    };
+
+    $('list').onclick = function(e){
+      var btn = e.target.closest('.item'); if(!btn) return;
+      var it = items.find(function(x){ return x.id === btn.dataset.id; });
+      if(it) showDetail(it);
     };
 
     $('d-back').onclick = closeDetail;
-    $('d-body').onclick = async function(e){
-      var zoom = e.target.dataset.zoomDetail;
-      if(zoom != null){
+    $('d-body').onclick = function(e){
+      var zoom = e.target.dataset.zoomHero;
+      if(zoom != null && openId){
         var it = items.find(function(x){ return x.id === openId; });
-        if(it && it.photos && it.photos[zoom]){ $('lb-img').src = it.photos[zoom]; $('lb').hidden = false; }
+        if(it && it.photos[Number(zoom)]){
+          $('lb-img').src = it.photos[Number(zoom)];
+          $('lb').hidden = false;
+        }
         return;
       }
-      if(e.target.id === 'd-edit'){
+      if(e.target.id === 'd-edit' && openId){
         var it = items.find(function(x){ return x.id === openId; });
-        if(it) openForm(it);
+        if(it){ closeDetail(); openForm(it); }
       }
-      if(e.target.id === 'd-share'){
-        var it = items.find(function(x){ return x.id === openId; });
-        if(it){
-          var text = shareItemText(it);
-          if(navigator.share){ try{ await navigator.share({title:it.name, text:text}); return; }catch(err){} }
-          navigator.clipboard.writeText(text).then(function(){ toast('متن جزئیات کپی شد'); });
-        }
-      }
-      if(e.target.id === 'd-del'){
+      if(e.target.id === 'd-del' && openId){
         var btn = e.target;
         if(!btn.classList.contains('armed')){
-          btn.classList.add('armed'); btn.textContent = 'برای تأیید حذف دوباره بزنید';
-          setTimeout(function(){ btn.classList.remove('armed'); btn.textContent = 'حذف'; }, 4000);
+          btn.classList.add('armed');
+          btn.textContent = 'تایید حذف؟';
+          setTimeout(function(){ btn.classList.remove('armed'); btn.textContent = 'حذف'; }, 3000);
           return;
         }
-        if(await deleteItem(openId)){
-          items = items.filter(function(x){ return x.id !== openId; });
-          closeDetail(); renderList(); toast('مورد حذف شد');
-        }
+        deleteItem(openId).then(function(ok){
+          if(ok){
+            items = items.filter(function(x){ return x.id !== openId; });
+            closeDetail(); renderList(); toast('حذف شد');
+          }
+        });
       }
     };
+
     $('lb').onclick = function(){ $('lb').hidden = true; };
+
+    $('export-data').onclick = exportData;
+    $('import-data').onclick = function(){ $('import-file').click(); };
+    $('import-file').onchange = function(e){
+      if(e.target.files[0]) importData(e.target.files[0]);
+      e.target.value = '';
+    };
+    $('share-all').onclick = async function(){
+      var text = items.map(function(it, i){
+        return (i+1) + '. ' + it.name + (it.device ? ' ('+it.device+')' : '') + ' - ' + STATUS[it.status] + (it.cost ? ' - ' + fmtCost(it.cost) : '');
+      }).join('\n');
+      if(!text){ toast('موردی وجود ندارد'); return; }
+      if(navigator.share){
+        try{ await navigator.share({title:'آرشیو تعمیرات', text:text}); }catch(e){}
+      } else {
+        navigator.clipboard.writeText(text);
+        toast('لیست در کلیپ‌بورد کپی شد');
+      }
+    };
+
+    // Dark/Light Mode toggle
+    var savedTheme = localStorage.getItem('repair_archive_theme');
+    if(savedTheme) document.documentElement.setAttribute('data-theme', savedTheme);
+    $('theme-toggle').onclick = function(){
+      var current = document.documentElement.getAttribute('data-theme');
+      var next = current === 'dark' ? 'light' : (current === 'light' ? '' : 'dark');
+      if(next) document.documentElement.setAttribute('data-theme', next);
+      else document.documentElement.removeAttribute('data-theme');
+      localStorage.setItem('repair_archive_theme', next);
+      $('theme-toggle').textContent = next === 'dark' ? '☀️' : '🌙';
+    };
   });
 })();
 </script>
