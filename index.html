@@ -10,7 +10,6 @@
 <meta name="apple-mobile-web-app-title" content="آرشیو تعمیرات">
 <title>آرشیو تعمیرات و پروژه‌ها</title>
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Vazirmatn:wght@400;500;700;800&display=swap">
-<script src="vendor/jalaali.min.js"></script>
 <style>
 :root{
   box-sizing:border-box;
@@ -138,10 +137,12 @@ textarea.field{min-height:110px;resize:vertical}
 .jp-header{display:flex;justify-content:space-between;align-items:center;font-weight:700;margin-bottom:10px}
 .jp-header button{background:var(--board);color:#fff;border:none;border-radius:6px;padding:4px 12px;cursor:pointer;font-size:14px}
 .jp-grid{display:grid;grid-template-columns:repeat(7,1fr);gap:4px;text-align:center}
-.jp-cell{padding:8px 0;font-size:13.5px;cursor:pointer;border-radius:6px;background:var(--bg)}
+.jp-cell{padding:8px 0;font-size:13.5px;cursor:pointer;border-radius:6px;background:var(--bg);position:relative}
 .jp-cell:hover{background:var(--board);color:#fff}
-.jp-cell.selected{background:var(--silk);color:var(--silk-ink);font-weight:700}
-.jp-cell.today{box-shadow:inset 0 0 0 2px var(--silk)}
+.jp-cell.today{background:var(--work-bg);color:var(--work);font-weight:800;box-shadow:inset 0 0 0 2px var(--work)}
+.jp-cell.today::after{content:"";position:absolute;bottom:3px;left:50%;transform:translateX(-50%);width:5px;height:5px;border-radius:50%;background:var(--work)}
+.jp-cell.selected{background:var(--silk);color:var(--silk-ink);font-weight:800;box-shadow:none}
+.jp-cell.selected::after{background:var(--silk-ink)}
 .jp-weekname{font-size:12px;color:var(--muted);font-weight:700;padding-bottom:4px}
 
 .d-title{font-size:22px;font-weight:800;margin:0 0 8px}
@@ -163,6 +164,7 @@ textarea.field{min-height:110px;resize:vertical}
 .toast[hidden]{display:none}
 @media (prefers-reduced-motion:reduce){*{transition:none!important;animation:none!important}}
 </style>
+</head>
 <body>
 
 <header class="top">
@@ -408,7 +410,7 @@ textarea.field{min-height:110px;resize:vertical}
   }
 
   var MAX_PHOTOS = 20, MAX_VOICES = 20, MAX_DESC_LEN = 5000;
-  var MAX_RECORD_BYTES = 5 * 1024 * 1024;
+  var MAX_RECORD_BYTES = 30 * 1024 * 1024;
 
   function validateItem(it){
     if(!it || typeof it !== 'object') return null;
@@ -429,7 +431,7 @@ textarea.field{min-height:110px;resize:vertical}
     var totalBytes = 0;
     photos.forEach(function(u){ totalBytes += byteLengthOfDataURL(u); });
     voices.forEach(function(u){ totalBytes += byteLengthOfDataURL(u); });
-    if(totalBytes > MAX_RECORD_BYTES) return null;
+    if(totalBytes > MAX_RECORD_BYTES) return {__oversize: true};
 
     return Object.assign({}, it, {
       photos: photos, voices: voices, desc: desc,
@@ -456,7 +458,7 @@ textarea.field{min-height:110px;resize:vertical}
       var obj = JSON.parse(text);
       var incoming = Array.isArray(obj) ? obj : obj.items;
       if(!Array.isArray(incoming)) throw new Error('bad-format');
-      incoming = incoming.map(validateItem).filter(Boolean);
+      incoming = incoming.map(validateItem).filter(function(x){ return x && !x.__oversize; });
       if(!incoming.length) throw new Error('empty');
       if(db){
         var tx = db.transaction(STORE,'readwrite'), store = tx.objectStore(STORE);
@@ -533,12 +535,12 @@ textarea.field{min-height:110px;resize:vertical}
     p.hidden = nextHidden;
     if(!p.hidden) renderJalaliGrid();
   }
+  /* Self-contained leap-year check (33-year cycle approximation) —
+     no external library needed, matches the astronomical calendar
+     for every year in the modern era with only rare, decades-apart exceptions. */
   function isJalaliLeap(jy){
-    if(typeof jalaali === 'undefined' ||
-       typeof jalaali.isLeapJalaaliYear !== 'function'){
-      throw new Error('jalaali-js not loaded — check vendor/jalaali.min.js');
-    }
-    return jalaali.isLeapJalaaliYear(jy);
+    var r = ((jy % 33) + 33) % 33;
+    return [1,5,9,13,17,22,26,30].indexOf(r) !== -1;
   }
   function daysInPersianMonth(jy, month){
     if(month <= 6) return 31;
@@ -567,10 +569,13 @@ textarea.field{min-height:110px;resize:vertical}
       for(var i=1; i<=total; i++){
         var mStr = String(pM).padStart(2,'0'), dStr = String(i).padStart(2,'0');
         var fullDate = pY + '/' + mStr + '/' + dStr;
+        var isToday = (pY===tY && pM===tM && i===tD);
+        var isSelected = (selParts.length===3 && selParts[0]===pY && selParts[1]===pM && selParts[2]===i);
         var cls = 'jp-cell';
-        if(pY===tY && pM===tM && i===tD) cls += ' today';
-        if(selParts.length===3 && selParts[0]===pY && selParts[1]===pM && selParts[2]===i) cls += ' selected';
-        html += '<div class="'+cls+'" data-val="'+fullDate+'">'+i.toLocaleString('fa-IR')+'</div>';
+        if(isToday) cls += ' today';
+        if(isSelected) cls += ' selected';
+        var title = isToday ? ' title="امروز"' : '';
+        html += '<div class="'+cls+'" data-val="'+fullDate+'"'+title+'>'+i.toLocaleString('fa-IR')+'</div>';
       }
       grid.innerHTML = html;
     } catch(e){
@@ -658,9 +663,10 @@ textarea.field{min-height:110px;resize:vertical}
   }
   function addFiles(list){
     if(!list || !list.length) return Promise.resolve();
+    if(draft.photos.length >= MAX_PHOTOS){ toast('حداکثر '+MAX_PHOTOS+' عکس مجاز است'); return Promise.resolve(); }
     toast('در حال آماده‌سازی عکس…');
     return Promise.all(Array.prototype.map.call(list, shrink)).then(function(urls){
-      urls.forEach(function(u){ if(u) draft.photos.push(u); });
+      urls.forEach(function(u){ if(u && draft.photos.length < MAX_PHOTOS) draft.photos.push(u); });
       renderPhotos();
     });
   }
@@ -687,7 +693,12 @@ textarea.field{min-height:110px;resize:vertical}
     };
 
     var valid = validateItem(record);
-    if(!valid){ toast('رکورد نامعتبر'); return; }
+    if(!valid || valid.__oversize){
+      toast(valid && valid.__oversize
+        ? 'حجم عکس‌ها و ویس‌های این مورد زیاد است — چند مورد را حذف و دوباره ذخیره کنید.'
+        : 'رکورد نامعتبر', 5000);
+      return;
+    }
     record = valid;
 
     if(!(await saveItem(record))) return;
@@ -1084,6 +1095,7 @@ textarea.field{min-height:110px;resize:vertical}
     try{ if(navigator.storage && navigator.storage.persist) navigator.storage.persist(); }catch(e){}
   }
 
+  window.__testHooks = { daysInPersianMonth: daysInPersianMonth, isJalaliLeap: isJalaliLeap, validateItem: validateItem, MAX_RECORD_BYTES: MAX_RECORD_BYTES };
   initStorage().then(init);
 })();
 </script>
